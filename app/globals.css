@@ -87,3 +87,15 @@ main>[data-slot=tabs]{gap:0}.site-header{gap:18px}.product-tabs{height:50px!impo
 .sky-stage.veiled-sky .lift-scenes:after{background:#e9f3f31c}
 @media(max-width:520px){.lift-scene-sun{background-position:74% center}.lift-scene-front{background-position:50% center}.lift-scene-mountain{background-position:62% center}.lift-scene-night{background-position:39% center}.lift-scene-upper{background-position:center}}
 @media(prefers-reduced-motion:reduce){.lift-scene{transition:none}}
+.stage-cloud-stack{position:absolute;inset:0;isolation:isolate}
+.stage-cloud-fallback,.cloud-three{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.stage-cloud-fallback.is-hidden{visibility:hidden}
+.cloud-three-canvas{display:block;width:100%;height:100%}
+.sky-mode{background:#f7fcff;border:1px solid #c8e2ed;box-shadow:0 4px 16px #123f5e35;padding:6px;gap:6px}
+.sky-mode button{min-height:40px;padding:8px 12px;background:#fff;color:#195675;border:1px solid #93bed1}
+.sky-mode button.active{background:#137c9f;color:#fff;border-color:#137c9f}
+.sky-mode button:focus-visible{outline:3px solid #ffe28b;outline-offset:2px}
+.cloud-needs-help{position:absolute;z-index:7;left:50%;top:43%;transform:translate(-50%,-50%);width:min(86%,360px);padding:15px 18px;background:#f7fcfff2;border:1px solid #c5e3ee;border-radius:16px;box-shadow:0 5px 20px #17466530;color:#1c506a;text-align:center;touch-action:manipulation}
+.cloud-needs-help strong{display:block;font-size:.9rem;line-height:1.5}
+.cloud-needs-help button{margin-top:10px;min-height:40px;padding:8px 14px;border:0;border-radius:10px;background:#147fa4;color:#fff;font-size:.88rem;font-weight:800}
+@media(max-width:520px){.sky-mode button{min-height:40px;padding:7px 10px}.cloud-needs-help{top:45%;padding:12px 14px}.cloud-needs-help strong{font-size:.82rem}}
