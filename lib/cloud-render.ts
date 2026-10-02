@@ -25,6 +25,7 @@ export function cloudBitmap(s:CloudSettings,small=false,large=false){
   const key=[width,s.humidity,s.height,s.nuclei,s.color,s.shadow,s.depth,s.lightX,s.cloudType,s.modelVersion===2?s.growth:'old',s.modelVersion===2?s.energy:'',s.modelVersion===2?s.wind:'',s.modelVersion===2?Math.round(s.angle/6):''].join('-');
   const cached=bitmapCache.get(key);if(cached)return cached;
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d',{willReadFrequently:false})!;
+  if(s.modelVersion===2&&cloudState(s).visibility===0){if(bitmapCache.size>14)bitmapCache.delete(bitmapCache.keys().next().value!);bitmapCache.set(key,canvas);return canvas;}
   const img=ctx.createImageData(width,height),d=img.data;
   const state=cloudState(s),rise=clamp((s.height-state.base)/1300),wet=s.humidity/100,seed=31;
   const newModel=s.modelVersion===2,growth=(s.growth??35)/100,view=(newModel?Math.round(s.angle/6)*6:0)*Math.PI/180;

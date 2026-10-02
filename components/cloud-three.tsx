@@ -5,10 +5,11 @@ import type {CloudSettings} from '@/lib/cloud-model';
 import {cloudState} from '@/lib/cloud-model';
 import {drawCloud,subscribeCloudTexture} from '@/lib/cloud-render';
 
-export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(ready:boolean)=>void}){
+export function CloudThree({settings,interactive=false,onReady}:{settings:CloudSettings;interactive?:boolean;onReady?:(ready:boolean)=>void}){
   const host=useRef<HTMLDivElement>(null);
   const settingsRef=useRef(settings);
   settingsRef.current=settings;
+  const interactiveRef=useRef(interactive);interactiveRef.current=interactive;
 
   useEffect(()=>{
     let disposed=false,frame=0;
@@ -46,10 +47,10 @@ export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(
       const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide});
       scene.add(new THREE.Mesh(geometry,material));
 
-      let needsCheck=true,contextOkay=true,lastKey='';
+      let needsCheck=true,contextOkay=true,lastKey='',reportedReady=false;
       const redraw=()=>{
         if(disposed)return;
-        drawCloud(cloudCanvas,settingsRef.current);
+        drawCloud(cloudCanvas,settingsRef.current,interactiveRef.current);
         texture.needsUpdate=true;
         needsCheck=true;
       };
@@ -64,7 +65,7 @@ export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(
       });
       resize.observe(mount);
       redraw();
-      const contextLost=(event:Event)=>{event.preventDefault();contextOkay=false;onReady?.(false)};
+      const contextLost=(event:Event)=>{event.preventDefault();contextOkay=false;reportedReady=false;onReady?.(false)};
       const contextRestored=()=>{contextOkay=true;redraw()};
       renderer.domElement.addEventListener('webglcontextlost',contextLost);
       renderer.domElement.addEventListener('webglcontextrestored',contextRestored);
@@ -72,7 +73,7 @@ export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(
       const animate=()=>{
         if(disposed)return;
         const s=settingsRef.current;
-        const key=[s.humidity,s.height,s.nuclei,s.wind,s.energy,s.angle,s.color,s.shadow,s.depth,s.lightX,s.cloudType,s.growth].join('|');
+        const key=[s.humidity,s.height,s.nuclei,s.wind,s.energy,s.angle,s.color,s.shadow,s.depth,s.lightX,s.cloudType,s.growth,interactiveRef.current].join('|');
         if(key!==lastKey){lastKey=key;redraw()}
         if(contextOkay){
           try{
@@ -81,7 +82,7 @@ export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(
               needsCheck=false;
               const state=cloudState(s);
               let visible=false;
-              if(state.formed&&state.visibility>.015){
+              if(state.formed&&state.visibility>.015&&!reportedReady){
                 const gl=renderer.getContext(),pixel=new Uint8Array(4);
                 const width=renderer.domElement.width,height=renderer.domElement.height;
                 for(let y=0;y<5&&!visible;y++)for(let x=0;x<7&&!visible;x++){
@@ -89,7 +90,7 @@ export function CloudThree({settings,onReady}:{settings:CloudSettings;onReady?:(
                   visible=pixel[3]>8;
                 }
               }
-              onReady?.(visible);
+              const next=state.formed&&(reportedReady||visible);if(next!==reportedReady){reportedReady=next;onReady?.(next);}
             }
           }catch(error){
             console.error('Cloud WebGL rendering failed',error);

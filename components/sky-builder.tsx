@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from "react";
-import {CloudSun,Copy,Download,FolderOpen,Minus,Moon,Plus,Save,Sun,Trash2,Wind} from "lucide-react";
+import {Cloud,CloudLightning,CloudRain,CloudSun,Copy,Download,FolderOpen,Moon,Save,Sun,Trash2,Wind,type LucideIcon} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Dialog,DialogContent,DialogDescription,DialogTitle} from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import {CloudSettings,CLOUD_TYPES} from "@/lib/cloud-model";
 import {drawCloud,subscribeCloudTexture,waitForCloudTexture} from "@/lib/cloud-render";
 import {latestSavedSkies,saveSharedSky,type SavedSkyRecord} from "@/lib/skies";
 import {cloudInSky,skyExposure} from '@/lib/sky-lighting';
+import {drawSkySun} from '@/lib/sky-sun';
 import {cloudsByIds} from "@/lib/clouds";
 
 type RecordCloud=CloudSettings&{id:number;maker:string;decoration:string;createdAt:string};
@@ -24,14 +25,50 @@ const typeName=(id:CloudSettings["cloudType"])=>CLOUD_TYPES.find(type=>type.id==
 const STORAGE_KEY="gureumso-saved-skies-v1";
 const MIGRATION_KEY="gureumso-saved-skies-migrated-v2";
 
-function CloudPicture({settings,small=false,exposure=1}:{settings:CloudSettings;small?:boolean;exposure?:number}){
+type CloudBounds={left:number;top:number;width:number;height:number};
+function CloudPicture({settings,small=false,exposure=1,onBounds}:{settings:CloudSettings;small?:boolean;exposure?:number;onBounds?:(bounds:CloudBounds)=>void}){
  const ref=useRef<HTMLCanvasElement>(null);
- useEffect(()=>{const canvas=ref.current;if(!canvas)return;let disposed=false;const render=()=>{if(!disposed)drawCloud(canvas,settings,small)};const frame=requestAnimationFrame(render);const unsubscribe=subscribeCloudTexture(render);return()=>{disposed=true;cancelAnimationFrame(frame);unsubscribe()}},[settings,small]);
+ useEffect(()=>{const canvas=ref.current;if(!canvas)return;let disposed=false;const render=()=>{if(!disposed){drawCloud(canvas,settings,small);if(onBounds){
+ const {width:w,height:h}=canvas,d=canvas.getContext('2d')!.getImageData(0,0,w,h).data;
+ let x0=w,y0=h,x1=0,y1=0;
+ for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2)if(d[(y*w+x)*4+3]>28){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+ if(x1>x0&&y1>y0)onBounds({left:Math.max(0,x0-8)/w*100,top:Math.max(0,y0-8)/h*100,width:Math.min(w,x1-x0+16)/w*100,height:Math.min(h,y1-y0+16)/h*100});
+ }}};const frame=requestAnimationFrame(render);const unsubscribe=subscribeCloudTexture(render);return()=>{disposed=true;cancelAnimationFrame(frame);unsubscribe()}},[settings,small,onBounds]);
  return <canvas ref={ref} className="sky-builder-cloud-canvas" style={{filter:`brightness(${exposure})`}} role="img" aria-label={`${typeName(settings.cloudType)} 구름`}/>;
 }
 
-const weatherOptions:[Weather,string,string][]=[
- ["clear","맑음","☀️"],["cloudy","흐림","⛅"],["rain","비","🌧️"],["storm","폭풍","⛈️"],
+function SunPicture({kind,warm}:{kind:SunKind;warm:boolean}){
+ const ref=useRef<HTMLCanvasElement>(null);
+ useEffect(()=>{const canvas=ref.current;if(!canvas)return;canvas.width=640;canvas.height=640;const ctx=canvas.getContext('2d')!;drawSkySun(ctx,320,320,58,kind,warm)},[kind,warm]);
+ return <canvas ref={ref} className="sun-optics"/>;
+}
+function PlacedCloudView({item,cloud,settings,exposure,selected,onDrag,onResize,onRemove}:{item:PlacedCloud;cloud:RecordCloud;settings:CloudSettings;exposure:number;selected:boolean;onDrag:(e:ReactPointerEvent,kind:'placed',cloudId:number,instanceId:number)=>void;onResize:(id:number,scale:number)=>void;onRemove:(id:number)=>void}){
+ const [bounds,setBounds]=useState<CloudBounds>({left:10,top:22,width:80,height:56});
+ const resize=useRef<{pointerId:number;x:number;y:number;vx:number;vy:number;scale:number}|null>(null);
+ const root=useRef<HTMLDivElement>(null);
+ const startResize=(event:ReactPointerEvent<HTMLButtonElement>)=>{
+  event.preventDefault();event.stopPropagation();const rect=root.current!.getBoundingClientRect();
+  const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+  resize.current={pointerId:event.pointerId,x,y,vx:event.clientX-x,vy:event.clientY-y,scale:item.scale};event.currentTarget.setPointerCapture(event.pointerId);
+ };
+ const moveResize=(event:ReactPointerEvent<HTMLButtonElement>)=>{const r=resize.current;if(!r||r.pointerId!==event.pointerId)return;event.stopPropagation();const ratio=((event.clientX-r.x)*r.vx+(event.clientY-r.y)*r.vy)/(r.vx*r.vx+r.vy*r.vy);onResize(item.instanceId,clamp(r.scale*ratio,.5,1.8))};
+ const endResize=(event:ReactPointerEvent<HTMLButtonElement>)=>{resize.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId)};
+ return <div ref={root} className={`placed-cloud${selected?' selected':''}`} style={{left:`${item.x}%`,top:`${item.y}%`,width:`${240*item.scale}px`,zIndex:Math.round(item.scale*10)+3}}>
+  <CloudPicture settings={settings} exposure={exposure} onBounds={setBounds}/>
+  <div className="cloud-edit-bounds" style={{left:`${bounds.left}%`,top:`${bounds.top}%`,width:`${bounds.width}%`,height:`${bounds.height}%`}}>
+   <button className="cloud-move-target" onPointerDown={e=>{
+    const canvas=root.current?.querySelector('canvas');if(!canvas)return;
+    const rect=canvas.getBoundingClientRect(),ctx=canvas.getContext('2d')!;
+    let hit=false;for(const dy of [-5,0,5])for(const dx of [-5,0,5]){const x=Math.floor((e.clientX+dx-rect.left)/rect.width*canvas.width),y=Math.floor((e.clientY+dy-rect.top)/rect.height*canvas.height);if(x>=0&&x<canvas.width&&y>=0&&y<canvas.height&&ctx.getImageData(x,y,1,1).data[3]>28)hit=true;}
+    if(hit)onDrag(e,'placed',item.cloudId,item.instanceId);
+   }} onKeyDown={e=>{if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();onRemove(item.instanceId)}}} aria-label={`${cloud.maker}의 ${typeName(cloud.cloudType)}. 끌어서 옮기기`}/>
+   {selected&&(['nw','ne','sw','se'] as const).map(corner=><button key={corner} className={`cloud-resize-handle corner-${corner}`} aria-label={`${cloud.maker} 구름 ${corner} 모서리 크기 조절`} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={endResize} onPointerCancel={endResize} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();onResize(item.instanceId,clamp(item.scale+(['ArrowUp','ArrowRight'].includes(e.key)?.08:-.08),.5,1.8))}}}/>)}
+  </div>
+ </div>;
+}
+
+const weatherOptions:[Weather,string,LucideIcon][]=[
+ ["clear","맑음",Sun],["cloudy","흐림",Cloud],["rain","비",CloudRain],["storm","폭풍",CloudLightning],
 ];
 const sunOptions:[SunKind,string][]=[["round","동그란 해"],["radiant","반짝이는 해"],["soft","부드러운 해"]];
 const timeOptions:[TimeOfDay,string][]=[["dawn","아침"],["day","낮"],["sunset","노을"],["night","밤"]];
@@ -49,7 +86,6 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
  const trayGesture=useRef<{pointerId:number;cloudId:number;x:number;y:number}|null>(null);
  const cloudsById=useMemo(()=>new Map([...extraClouds,...clouds].map(cloud=>[cloud.id,cloud])),[clouds,extraClouds]);
  const litClouds=useMemo(()=>new Map([...cloudsById].map(([id,cloud])=>[id,cloudInSky(cloud,time,weather)])),[cloudsById,time,weather]);
- const selected=placed.find(item=>item.instanceId===selectedId)??null;
 
  useEffect(()=>{const timer=window.setTimeout(()=>setShowPanHint(false),3000);return()=>window.clearTimeout(timer)},[]);
 
@@ -68,7 +104,7 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
   if(x===undefined){const rect=stageRef.current?.getBoundingClientRect();x=rect?pointInStage(rect.left+rect.width/2,rect.top+rect.height*.43)?.x??50:50;}
   const instanceId=nextId.current++;
   setPlaced(items=>[...items,{instanceId,cloudId,x,y,scale:1}]);
-  setSelectedId(instanceId);setMessage("구름을 잡아 옮기고, −와 +로 크기를 바꿔 봐.");
+  setSelectedId(instanceId);setMessage("구름을 옮기고, 모서리를 끌어 크기를 바꿔 봐.");
  };
  const startDrag=(event:React.PointerEvent,kind:DragState["kind"],cloudId:number,instanceId?:number)=>{
   event.preventDefault();event.stopPropagation();
@@ -127,14 +163,15 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
   const up=(event:PointerEvent)=>{
    const point=pointInStage(event.clientX,event.clientY);
    if(drag.kind==="tray"&&point)addCloud(drag.cloudId,point.x,point.y);
+   if(drag.kind==='placed'&&drag.instanceId&&drag.moved&&!point&&event.type!=='pointercancel')removeCloud(drag.instanceId);
    setDrag(null);
   };
   window.addEventListener("pointermove",move,{passive:true});window.addEventListener("pointerup",up,{once:true});window.addEventListener("pointercancel",up,{once:true});
   return()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up)};
  },[drag]);
 
- const resizeSelected=(amount:number)=>{if(selectedId===null)return;setPlaced(items=>items.map(item=>item.instanceId===selectedId?{...item,scale:clamp(item.scale+amount,.5,1.8)}:item))};
- const removeSelected=()=>{if(selectedId===null)return;setPlaced(items=>items.filter(item=>item.instanceId!==selectedId));setSelectedId(null);setMessage("다른 구름도 하늘에 놓아 봐.")};
+ const resizeCloud=(id:number,scale:number)=>setPlaced(items=>items.map(item=>item.instanceId===id?{...item,scale}:item));
+ const removeCloud=(id:number)=>{setPlaced(items=>items.filter(item=>item.instanceId!==id));setSelectedId(null);setMessage("구름을 하늘 밖으로 끌면 지울 수 있어.")};
  const clearSky=()=>{setPlaced([]);setSelectedId(null);setMessage("빈 하늘이 되었어. 새 구름을 골라 봐.")};
  const dragCloud=drag?cloudsById.get(drag.cloudId):undefined;
  const saveSky=async()=>{
@@ -158,7 +195,7 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
    // Moon silhouette from Lucide (ISC), matching the editor's Moon icon.
    ctx.translate(sunX-sunR,sunY-sunR);ctx.scale(sunR/12,sunR/12);
    ctx.fill(new Path2D("M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"));
-  }else{ctx.beginPath();ctx.arc(sunX,sunY,sunR,0,Math.PI*2);ctx.fill();}
+  }else{ctx.shadowBlur=0;drawSkySun(ctx,sunX,sunY,sunR,sunKind,time==="dawn"||time==="sunset");}
   ctx.restore();
   for(const item of placed){const cloud=cloudsById.get(item.cloudId);if(!cloud)continue;const layer=document.createElement("canvas");drawCloud(layer,cloudInSky(cloud,time,weather),false,true);const width=520*item.scale,height=width*.6;ctx.save();ctx.filter=`brightness(${skyExposure(time,weather)})`;ctx.drawImage(layer,item.x/100*1600-width/2,item.y/100*1000-height/2,width,height);ctx.restore()}
   if(weather==="rain"||weather==="storm"){ctx.save();ctx.strokeStyle="rgba(218,245,255,.72)";ctx.lineWidth=3;for(let i=0;i<75;i++){const x=(i*179)%1660-30,y=(i*83)%800;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-18,y+72);ctx.stroke()}ctx.restore()}
@@ -169,28 +206,35 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
  const copySky=async()=>{if(imageBusy)return;setImageBusy(true);setImageMessage("");try{if(!navigator.clipboard?.write||typeof ClipboardItem==="undefined")throw Error("unsupported");const blob=await renderSky();await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);setImageMessage("하늘 그림을 복사했어.")}catch{setImageMessage("이 브라우저에서는 복사가 안 돼. 그림 저장을 이용해 줘.")}finally{setImageBusy(false)}};
 
  return <section className={`sky-builder time-${time} weather-${weather}`} aria-label="하늘 만들기 편집기">
-  <div className="sky-editor-header"><div><h1>내가 만든 하늘</h1><p role="status">{message}</p></div>   <button className="sky-clear-button" onPointerDown={event=>event.stopPropagation()} onClick={clearSky} disabled={placed.length===0}><Trash2/> 하늘 비우기</button>
+  <div className="sky-editor-header"><div><h1>내가 만든 하늘</h1><p role="status">{message}</p></div>  <div className="sky-builder-actions desktop-sky-actions" aria-label="하늘 저장과 그림 관리">
+   <button onClick={()=>setSaveOpen(true)} disabled={placed.length===0} aria-label="현재 하늘 저장"><Save/><span>하늘 저장</span></button>
+   <button onClick={()=>void openLibrary()} aria-label={`저장된 하늘 ${savedSkies.length}개 열기`}><FolderOpen/><span>저장된 하늘</span>{savedSkies.length>0&&<b>{savedSkies.length}</b>}</button>
+   <button onClick={()=>void downloadSky()} disabled={imageBusy||placed.length===0} aria-label="하늘 그림 저장"><Download/><span>그림 저장</span></button>
+   <button onClick={()=>void copySky()} disabled={imageBusy||placed.length===0} aria-label="하늘 그림 복사"><Copy/><span>그림 복사</span></button>
+
+  </div>
+   <button className="sky-clear-button" onPointerDown={event=>event.stopPropagation()} onClick={clearSky} disabled={placed.length===0}><Trash2/> 하늘 비우기</button>
 </div>
   <div className="sky-settings"><div className="sky-setting-tabs" aria-label="하늘 설정">
    {([['weather','날씨',weatherOptions.find(o=>o[0]===weather)?.[1]],['sun','해',time==='night'?'달빛':sunOptions.find(o=>o[0]===sunKind)?.[1]],['time','시간',timeOptions.find(o=>o[0]===time)?.[1]]] as const).map(([key,label,value])=><button key={key} aria-expanded={openSetting===key} aria-controls="sky-setting-panel" onClick={()=>setOpenSetting(openSetting===key?null:key)}><strong>{label}</strong><span>{value}</span><b aria-hidden="true">{openSetting===key?'−':'+'}</b></button>)}
-  </div>   <div className="sky-builder-controls" id="sky-setting-panel">
-    {openSetting==="weather"&&<div className="sky-control-group"><strong>날씨</strong><div>{weatherOptions.map(([value,label,icon])=><button key={value} className={weather===value?"active":""} aria-pressed={weather===value} onClick={()=>setWeather(value)}><span>{icon}</span>{label}</button>)}</div></div>}
-    {openSetting==="sun"&&<div className="sky-control-group"><strong>해 모습</strong>{time==="night"&&<p className="moon-setting-note">밤에는 달빛이 구름을 비춰 줘.</p>}<div>{sunOptions.map(([value,label])=><button key={value} className={sunKind===value?"active":""} aria-pressed={sunKind===value} disabled={time==="night"} onClick={()=>setSunKind(value)}>{label}</button>)}</div></div>}
-    {openSetting==="time"&&<div className="sky-control-group"><strong>시간</strong><div>{timeOptions.map(([value,label])=><button key={value} className={time===value?"active":""} aria-pressed={time===value} onClick={()=>setTime(value)}>{label}</button>)}</div></div>}
+  </div>   <div className={`sky-builder-controls${openSetting?" has-open":""}`} id="sky-setting-panel">
+    {<div className={`sky-control-group setting-weather${openSetting==="weather"?" expanded":""}`}><strong>날씨</strong><div>{weatherOptions.map(([value,label,Icon])=><button key={value} className={weather===value?"active":""} aria-pressed={weather===value} onClick={()=>setWeather(value)}><Icon className="weather-choice-icon" aria-hidden="true"/>{label}</button>)}</div></div>}
+    {<div className={`sky-control-group setting-sun${openSetting==="sun"?" expanded":""}`}><strong>해 모습</strong>{time==="night"&&<p className="moon-setting-note">밤에는 달빛이 구름을 비춰 줘.</p>}<div>{sunOptions.map(([value,label])=><button key={value} className={sunKind===value?"active":""} aria-pressed={sunKind===value} disabled={time==="night"} onClick={()=>setSunKind(value)}>{label}</button>)}</div></div>}
+    {<div className={`sky-control-group setting-time${openSetting==="time"?" expanded":""}`}><strong>시간</strong><div>{timeOptions.map(([value,label])=><button key={value} className={time===value?"active":""} aria-pressed={time===value} onClick={()=>setTime(value)}>{label}</button>)}</div></div>}
    </div>
 </div>
   <div className="sky-builder-stage" ref={stageRef} onPointerDown={startSkyPan} onPointerMove={moveSkyPan} onPointerUp={endSkyPan} onPointerCancel={endSkyPan}>
    <div className="sky-builder-scene" ref={sceneRef} style={{"--sky-pan":pan} as React.CSSProperties}>
     <div className="sky-builder-glow" aria-hidden="true"/>
-    <div className={`sky-builder-sun sun-${sunKind}`} aria-hidden="true">{time==="night"?<Moon/>:<Sun/>}</div>
+    <div className={`sky-builder-sun sun-${sunKind}`} aria-hidden="true">{time==="night"?<Moon/>:<SunPicture kind={sunKind} warm={time==="dawn"||time==="sunset"}/>}</div>
     <div className="sky-builder-horizon" aria-hidden="true"/>
     {(weather==="rain"||weather==="storm")&&<div className="scene-rain" aria-hidden="true">{Array.from({length:42},(_,index)=><i key={index} style={{left:`${(index*37)%101}%`,animationDelay:`-${(index%11)*.11}s`,animationDuration:`${.62+(index%7)*.045}s`}}/>)}</div>}
     {weather==="storm"&&<div className="scene-lightning" aria-hidden="true"/>}
-    {placed.map(item=>{const cloud=cloudsById.get(item.cloudId);if(!cloud)return null;return <button key={item.instanceId} className={`placed-cloud${selectedId===item.instanceId?" selected":""}`} style={{left:`${item.x}%`,top:`${item.y}%`,width:`${clamp(240*item.scale,125,430)}px`,zIndex:Math.round(item.scale*10)+3}} onPointerDown={event=>startDrag(event,"placed",item.cloudId,item.instanceId)} aria-label={`${cloud.maker}의 ${typeName(cloud.cloudType)}. 끌어서 옮기기`}><CloudPicture settings={litClouds.get(cloud.id)??cloud} exposure={skyExposure(time,weather)}/><span>{cloud.maker}</span></button>})}
+    {placed.map(item=>{const cloud=cloudsById.get(item.cloudId);if(!cloud)return null;return <PlacedCloudView key={item.instanceId} item={item} cloud={cloud} settings={litClouds.get(cloud.id)??cloud} exposure={skyExposure(time,weather)} selected={selectedId===item.instanceId} onDrag={startDrag} onResize={resizeCloud} onRemove={removeCloud}/>})}
    </div>
    {showPanHint&&<div className="sky-pan-hint" aria-hidden="true">← 하늘을 좌우로 쓸어 봐 →</div>}
    {isPanning&&<div className="sky-pan-position" aria-label="하늘에서 보고 있는 위치"><i style={{left:`${pan*72}%`}}/></div>}
-   {selected&&<div className="cloud-size-tools" onPointerDown={event=>event.stopPropagation()}><button onClick={()=>resizeSelected(-.12)} aria-label="선택한 구름 작게"><Minus/></button><strong>구름 크기</strong><button onClick={()=>resizeSelected(.12)} aria-label="선택한 구름 크게"><Plus/></button><button className="remove" onClick={removeSelected} aria-label="선택한 구름 지우기"><Trash2/></button></div>}
+   {drag?.kind==='placed'&&<div className="cloud-drop-hint">하늘 밖으로 끌면 지워져</div>}
 
   </div>
   <aside className="cloud-tray" aria-label="내가 만든 구름 목록">
@@ -199,14 +243,14 @@ export function SkyBuilder({clouds,loading}:{clouds:RecordCloud[];loading:boolea
     {loading?<div className="cloud-tray-empty">구름을 불러오는 중이야…</div>:clouds.length===0?<div className="cloud-tray-empty">먼저 ‘구름 제작소’에서 구름을 만들어 줘.</div>:clouds.map(cloud=><button key={cloud.id} className="tray-cloud" onPointerDown={event=>startTrayTouch(event,cloud.id)} onPointerMove={moveTrayTouch} onPointerUp={endTrayTouch} onPointerCancel={()=>{trayGesture.current=null}} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();addCloud(cloud.id)}}} aria-label={`${cloud.maker}의 ${typeName(cloud.cloudType)}. 하늘로 끌거나 눌러서 놓기`}><div><CloudPicture settings={cloud} small/></div><strong>{cloud.maker}</strong><span>{typeName(cloud.cloudType)}</span></button>)}
    </div>
   </aside>
-  <div className="sky-builder-actions" aria-label="하늘 저장과 그림 관리">
+  <div className="sky-builder-actions mobile-sky-actions" aria-label="하늘 저장과 그림 관리">
    <button onClick={()=>setSaveOpen(true)} disabled={placed.length===0} aria-label="현재 하늘 저장"><Save/><span>하늘 저장</span></button>
    <button onClick={()=>void openLibrary()} aria-label={`저장된 하늘 ${savedSkies.length}개 열기`}><FolderOpen/><span>저장된 하늘</span>{savedSkies.length>0&&<b>{savedSkies.length}</b>}</button>
    <button onClick={()=>void downloadSky()} disabled={imageBusy||placed.length===0} aria-label="하늘 그림 저장"><Download/><span>그림 저장</span></button>
    <button onClick={()=>void copySky()} disabled={imageBusy||placed.length===0} aria-label="하늘 그림 복사"><Copy/><span>그림 복사</span></button>
   </div>
   {imageMessage&&<p className="sky-export-status" role="status">{imageMessage}</p>}
-  {drag&&dragCloud&&<div className="drag-cloud-ghost" style={{left:drag.clientX,top:drag.clientY}} aria-hidden="true"><CloudPicture settings={dragCloud}/></div>}
+  {drag?.kind==="tray"&&dragCloud&&<div className="drag-cloud-ghost" style={{left:drag.clientX,top:drag.clientY}} aria-hidden="true"><CloudPicture settings={dragCloud}/></div>}
   <Dialog open={saveOpen} onOpenChange={setSaveOpen}><DialogContent className="sky-save-dialog"><DialogTitle>이 하늘을 저장할까?</DialogTitle><DialogDescription>이름을 붙이면 다른 기기에서도 다시 열 수 있어.</DialogDescription><label htmlFor="sky-name">하늘 이름</label><Input id="sky-name" value={skyName} onChange={event=>setSkyName(event.target.value)} maxLength={18} placeholder="예: 비 오는 노을 하늘" onKeyDown={event=>{if(event.key==="Enter")void saveSky()}}/>{saveError&&<p className="error" role="alert">{saveError}</p>}<Button onClick={()=>void saveSky()} disabled={skySaving}><Save/> {skySaving?"저장하는 중…":"하늘 저장하기"}</Button></DialogContent></Dialog>
   <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}><DialogContent className="saved-sky-dialog"><DialogTitle>저장된 하늘</DialogTitle><DialogDescription>함께 만든 하늘을 어느 기기에서든 다시 열 수 있어.</DialogDescription>{skiesLoading?<p className="saved-sky-empty">하늘을 불러오는 중이야…</p>:savedSkies.length===0?<p className="saved-sky-empty">아직 저장한 하늘이 없어.</p>:<div className="saved-sky-list">{savedSkies.map(sky=><div className={`saved-sky-item time-${sky.time} weather-${sky.weather}`} key={sky.id}><button className="saved-sky-open" onClick={()=>void loadSky(sky)}><span>{sky.name}</span><small>{sky.placed.length}개의 구름 · {new Date(sky.savedAt).toLocaleDateString("ko-KR")}</small></button></div>)}</div>}</DialogContent></Dialog>
  </section>;

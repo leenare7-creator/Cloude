@@ -13,7 +13,6 @@ import {cloudPngBlob} from '@/lib/cloud-export';
 import {skyBackground} from '@/lib/sky-palette';
 
 type RecordCloud=CloudSettings&{id:number;maker:string;decoration:string;createdAt:string};
-type Spark={id:number;x:number;y:number};
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const chapters=[
   {icon:'💧',name:'물 모으기',title:'하늘에 물을 모아 줘',copy:'하늘을 손가락으로 쓸어 봐. 눈에 보이지 않는 물이 조금씩 모여.',action:'하늘을 쓸어 물을 모으기',tip:'물이 많으면 구름이 더 쉽게 생겨.'},
@@ -34,20 +33,20 @@ function storyEffect(step:number,s:CloudSettings){
  return {title:state.formed?`${typeName(s.cloudType)} 완성!`:'구름을 만드는 중',description:state.formed?`${cloudStory(s)} ${s.rain>0?'물방울이 커져 비도 내려.':'지금은 비가 내리지 않아.'}`:'물을 모으고, 공기를 올리고, 씨앗을 뿌려 봐.'};
 }
 const colors=[{name:'하얀빛',hex:'#f5f8fa'},{name:'노을빛',hex:'#ffe0bc'},{name:'새벽빛',hex:'#e1e8f4'},{name:'회색빛',hex:'#aab9c9'},{name:'분홍빛',hex:'#f7dce8'}];
-function CloudCanvas({settings,small=false}:{settings:CloudSettings;small?:boolean}){
+function CloudCanvas({settings,small=false,preview=false}:{settings:CloudSettings;small?:boolean;preview?:boolean}){
   const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const canvas=ref.current;if(!canvas)return;let cancelled=false,visible=!small;const render=()=>{if(!cancelled&&visible)drawCloud(canvas,settings,small)};const frame=requestAnimationFrame(render);const unsubscribe=subscribeCloudTexture(render);const observer=small?new IntersectionObserver(entries=>{visible=entries[0]?.isIntersecting??false;if(visible)render()},{rootMargin:'160px'}):null;observer?.observe(canvas);return()=>{cancelled=true;cancelAnimationFrame(frame);unsubscribe();observer?.disconnect()}},[settings,small]);
+  useEffect(()=>{const canvas=ref.current;if(!canvas)return;let cancelled=false,visible=!small;const render=()=>{if(!cancelled&&visible)drawCloud(canvas,settings,small||preview)};const frame=requestAnimationFrame(render);const unsubscribe=subscribeCloudTexture(render);const observer=small?new IntersectionObserver(entries=>{visible=entries[0]?.isIntersecting??false;if(visible)render()},{rootMargin:'160px'}):null;observer?.observe(canvas);return()=>{cancelled=true;cancelAnimationFrame(frame);unsubscribe();observer?.disconnect()}},[settings,small,preview]);
   return <canvas ref={ref} className="cloud-canvas" role="img" aria-label={`${settings.angle}도 시점에서 본 구름`}/>;
 }
 
-function StageCloud({settings}:{settings:CloudSettings}){
+function StageCloud({settings,interactive=false}:{settings:CloudSettings;interactive?:boolean}){
   const [threeReady,setThreeReady]=useState(false);
   const [showRendererStatus,setShowRendererStatus]=useState(false);
   useEffect(()=>setShowRendererStatus(new URLSearchParams(window.location.search).has('cloudDebug')),[]);
   const ready=useCallback((value:boolean)=>setThreeReady(value),[]);
   return <div className="stage-cloud-stack">
-    <div className={`stage-cloud-fallback${threeReady?' is-hidden':''}`}><CloudCanvas settings={settings}/></div>
-    <CloudThree settings={settings} onReady={ready}/>
+    <div className={`stage-cloud-fallback${threeReady?' is-hidden':''}`}>{!threeReady&&<CloudCanvas settings={settings} preview={interactive}/>}</div>
+    <CloudThree settings={settings} interactive={interactive} onReady={ready}/>
     {showRendererStatus&&<span className="cloud-renderer-debug">{threeReady?'Three.js 구름':'기본 구름 표시 중'}</span>}
   </div>;
 }
@@ -71,21 +70,26 @@ function InfluenceCard({settings,compact=false}:{settings:CloudSettings;compact?
  return <section className={`influence-card${compact?' compact':''}`} aria-label={`${typeName(settings.cloudType)}을 만든 주요 조건`}><div className="influence-heading"><div><span>WHY THIS CLOUD?</span><strong>왜 {typeName(settings.cloudType)}이 되었을까?</strong></div><small>위에 있을수록 더 크게 작용했어.</small></div><div className="influence-list">{items.map((item,index)=><div className="influence-item" key={`${item.label}-${index}`}><div className="influence-rank">{index+1}</div><div className="influence-copy"><strong>{item.label}<b>{item.value}</b></strong><p>{item.reason}</p></div><span className={`impact impact-${item.level.replace(' ','-')}`}>{item.level}</span></div>)}</div><p className="influence-note">구름 씨앗·바람처럼 종류를 직접 바꾸지 않아도 결, 크기, 비의 양을 바꾸는 조건이 있어.</p></section>;
 }
 function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSettings;onChange:(patch:Partial<CloudSettings>)=>void;onVisitStep:(step:number)=>void}){
-  const stage=useRef<HTMLDivElement>(null),active=useRef(false),last=useRef<{x:number;y:number}>({x:0,y:0}),start=useRef<{x:number;y:number}>({x:0,y:0}),gesture=useRef<'water'|'height'|'seed'|'sun'|'pending'|'orbit'|'flow'|'level'|null>(null),gestureValue=useRef(0),windAtDown=useRef(67),levelAtDown=useRef(0),levelSensitivity=useRef(135),touches=useRef<Map<number,{x:number;y:number}>>(new Map()),pinch=useRef<number|null>(null),sparkId=useRef(0);
-  const [sparks,setSparks]=useState<Spark[]>([]),[mode,setMode]=useState<'add'|'remove'>('add');
+  const stage=useRef<HTMLDivElement>(null),active=useRef(false),last=useRef<{x:number;y:number}>({x:0,y:0}),start=useRef<{x:number;y:number}>({x:0,y:0}),gesture=useRef<'water'|'height'|'seed'|'sun'|'pending'|'orbit'|'flow'|'level'|null>(null),gestureValue=useRef(0),windAtDown=useRef(67),levelAtDown=useRef(0),levelSensitivity=useRef(135),touches=useRef<Map<number,{x:number;y:number}>>(new Map()),pinch=useRef<number|null>(null);
+  const [drawing,setDrawing]=useState(false),[mode,setMode]=useState<'add'|'remove'>('add');
   const state=cloudState(settings);
   const [colorsOpen,setColorsOpen]=useState(false);
   const missingStep=settings.humidity===0?0:!state.cooled?1:settings.nuclei===0?2:null;
   const norm=(e:React.PointerEvent)=>{const r=stage.current!.getBoundingClientRect();return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)}};
-  const puff=(x:number,y:number)=>{const id=++sparkId.current;setSparks(prev=>[...prev.slice(-17),{id,x,y}]);setTimeout(()=>setSparks(prev=>prev.filter(a=>a.id!==id)),1900)};
+  const pendingPatch=useRef<Partial<CloudSettings>>({}),patchFrame=useRef(0),changeRef=useRef(onChange);
+  changeRef.current=onChange;
+  const queueChange=(patch:Partial<CloudSettings>)=>{Object.assign(pendingPatch.current,patch);if(!patchFrame.current)patchFrame.current=requestAnimationFrame(()=>{patchFrame.current=0;const next=pendingPatch.current;pendingPatch.current={};changeRef.current(next)})};
+  useEffect(()=>()=>cancelAnimationFrame(patchFrame.current),[]);
+  const puff=(x:number,y:number)=>{const root=stage.current;if(!root)return;const node=document.createElement('span');node.className=`spark ${step===0?'drop':'seed'}`;node.style.left=`${x*100}%`;node.style.top=`${y*100}%`;node.textContent=step===0?'💧':'✧';node.setAttribute('aria-hidden','true');root.appendChild(node);node.addEventListener('animationend',()=>node.remove(),{once:true});setTimeout(()=>node.remove(),1900);while(root.querySelectorAll('.spark').length>24)root.querySelector('.spark')?.remove()};
   const interact=(e:React.PointerEvent,first=false)=>{
     const p=norm(e);
     if(step===0||(step===2&&gesture.current==='seed')){
       const distance=Math.hypot(p.x-last.current.x,p.y-last.current.y);
-      if(!first&&distance<(step===0?.028:.018))return;
-      const key=step===0?'humidity':'nuclei';
-      gestureValue.current=clamp(gestureValue.current+(mode==='add'?1:-1),0,100);
-      onChange({[key]:gestureValue.current});puff(p.x,p.y);
+      const spacing=step===0?.028:.018,key=step===0?'humidity':'nuclei';
+      gestureValue.current=clamp(gestureValue.current+(mode==='add'?1:-1)*(first?1:distance/spacing),0,100);
+      queueChange({[key]:Math.round(gestureValue.current)});
+      if(first)puff(p.x,p.y);
+      else if(distance>0){const count=Math.min(8,Math.max(1,Math.ceil(distance/.018)));for(let i=1;i<=count;i++)puff(last.current.x+(p.x-last.current.x)*i/count,last.current.y+(p.y-last.current.y)*i/count)}
     }else if(step===1){
       if(gesture.current==='level'&&!first){const totalY=p.y-start.current.y;onChange({energy:Math.round(clamp(levelAtDown.current-totalY*levelSensitivity.current,0,100))})}
       else if(gesture.current==='height')onChange({height:Math.round(clamp((.55-p.y)/.40,0,1)*2500)});
@@ -109,7 +113,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     e.preventDefault();stage.current?.setPointerCapture(e.pointerId);
     const p=norm(e);touches.current.set(e.pointerId,p);
     if(touches.current.size===2){const a=[...touches.current.values()];pinch.current=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);return}
-    active.current=true;last.current=p;start.current=p;
+    active.current=true;setDrawing(true);last.current=p;start.current=p;
     gestureValue.current=step===0?settings.humidity:settings.nuclei;
     const rail=(e.target as HTMLElement).closest('.sky-height-rail');
     levelAtDown.current=step===1?settings.energy:settings.growth??35;
@@ -119,25 +123,27 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     if(gesture.current!=='level')interact(e,true);
   };
   const move=(e:React.PointerEvent)=>{const p=norm(e);touches.current.set(e.pointerId,p);if(touches.current.size===2&&step===4){const a=[...touches.current.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(pinch.current!==null){onChange({depth:Math.round(clamp(settings.depth+(d-pinch.current)*130,0,100))})}pinch.current=d;return}if(active.current)interact(e)};
-  const up=(e:React.PointerEvent)=>{touches.current.delete(e.pointerId);pinch.current=null;active.current=false;gesture.current=null};
+  const up=(e:React.PointerEvent)=>{touches.current.delete(e.pointerId);pinch.current=null;active.current=false;setDrawing(false);gesture.current=null;if(stage.current?.hasPointerCapture(e.pointerId))stage.current.releasePointerCapture(e.pointerId)};
   const wheel=(e:React.WheelEvent)=>{if(step!==4)return;e.preventDefault();onChange({depth:Math.round(clamp(settings.depth-e.deltaY*.08,0,100))})};
-  return <div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
+  return <><div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
     {step>=1&&<LiftScene source={settings.liftSource??'sun'}/>}
     <div className="sky-label"><span>나의 하늘</span><small>{step===0?'하늘을 쓸어 봐':step===1?'공기를 위로 끌어 봐':step===2?'씨앗을 뿌려 봐':step===3?'바람과 시간을 바꿔 봐':'구름을 둘러봐'}</small></div>
     <div className="sky-readouts"><span>💧 {settings.humidity}%</span><span>↑ {settings.height.toLocaleString()}m</span><span>✧ {settings.nuclei}</span>{settings.rain>0&&<span>☂ {settings.rain}</span>}</div>
     {step===1&&<div className="altitude-guide"><span>높은 하늘 · 차가워</span><span>낮은 하늘 · 따뜻해</span></div>}
-    {step===1&&<div className="lift-source-picker" onPointerDown={e=>e.stopPropagation()}><strong>누가 공기를 움직일까?</strong><div>{sources.map(source=><button key={source.id} aria-pressed={(settings.liftSource??'sun')===source.id} className={(settings.liftSource??'sun')===source.id?'active':''} onClick={()=>onChange({liftSource:source.id})}><span>{source.icon}</span>{source.label}</button>)}</div></div>}
-    <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings}/><RainLayer settings={settings}/></div>
+
+    <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></div>
     {step===1&&<div className="air-orb" style={{top:`${55-settings.height/2500*40}%`}}><span>공기</span><MoveUp size={24}/></div>}
     {step===4&&<div className="sun-handle" style={{left:`${settings.lightX}%`,top:`${8+settings.shadow*.52}%`}} aria-label="빛을 끌어 그림자 바꾸기">{settings.liftSource==='night'?<Moon size={22}/>:<Sun size={22}/>}<span>빛</span></div>}
     {(step===1||step===3)&&<div className="sky-height-rail" role="slider" tabIndex={0} aria-label={step===1?'공기를 위로 밀어 올리는 힘':'구름이 자란 시간'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={step===1?settings.energy:settings.growth??35} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const key=step===1?'energy':'growth';onChange({[key]:clamp((step===1?settings.energy:settings.growth??35)+(e.key==='ArrowUp'?2:-2),0,100)})}}}><span>{step===1?'세게 솟아':'오래 자랐어'}</span><i className="rail-line"><b style={{bottom:`${step===1?settings.energy:settings.growth??35}%`}}/></i><span>{step===1?'조금씩 올라':'자라는 중'}</span><span>{step===1?'옆으로 퍼져':'막 생겼어'}</span></div>}
     {step===3&&<div className="wind-hint" aria-hidden="true"><span>← 바람 약하게</span><i><b style={{left:`${settings.wind}%`}}/></i><span>세게 →</span></div>}
     {step===4&&<div className={`sky-colors${colorsOpen?' expanded':''}`} onPointerDown={e=>e.stopPropagation()}><button className="color-panel-toggle" aria-expanded={colorsOpen} onClick={()=>setColorsOpen(!colorsOpen)}><i style={{background:settings.color}}/> 구름 색 {colorsOpen?'접기':'바꾸기'}</button>{colorsOpen&&<div className="colors">{colors.map(c=><button key={c.hex} className={settings.color===c.hex?'picked':''} title={c.name} aria-label={c.name} aria-pressed={settings.color===c.hex} style={{background:c.hex}} onClick={()=>onChange({color:c.hex})}/>)}<label className="custom-color" title="직접 색 고르기">+<input type="color" aria-label="직접 색 고르기" value={settings.color} onChange={e=>onChange({color:e.target.value})}/></label></div>}</div>}
-    {sparks.map(s=><span key={s.id} className={`spark ${step===0?'drop':'seed'}`} style={{left:`${s.x*100}%`,top:`${s.y*100}%`}}>{step===0?'💧':'✧'}</span>)}
+
     {(step===0||step===2)&&<div className="sky-mode" onPointerDown={e=>e.stopPropagation()}><button className={mode==='add'?'active':''} onClick={()=>setMode('add')} aria-pressed={mode==='add'}><Plus size={16}/> 더하기</button><button className={mode==='remove'?'active':''} onClick={()=>setMode('remove')} aria-pressed={mode==='remove'}><Minus size={16}/> 빼기</button></div>}
-    {step>=2&&missingStep!==null&&<div className="cloud-needs-help" onPointerDown={e=>e.stopPropagation()} role="status"><strong>{missingStep===0?'구름이 될 물을 먼저 모아 줘.':missingStep===1?`공기를 올려야 구름이 생겨. 지금은 ${settings.height.toLocaleString()}m야.`:'물방울이 맺힐 씨앗을 뿌려 줘.'}</strong><button onClick={()=>onVisitStep(missingStep)}>{missingStep===0?'물 모으러 가기':missingStep===1?'공기 올리러 가기':'씨앗 뿌리러 가기'} →</button></div>}
+    {step>=2&&missingStep!==null&&missingStep<step&&<div className="cloud-needs-help" onPointerDown={e=>e.stopPropagation()} role="status"><strong>{missingStep===0?'구름이 될 물을 먼저 모아 줘.':missingStep===1?`공기를 올려야 구름이 생겨. 지금은 ${settings.height.toLocaleString()}m야.`:'물방울이 맺힐 씨앗을 뿌려 줘.'}</strong><button onClick={()=>onVisitStep(missingStep)}>{missingStep===0?'물 모으러 가기':missingStep===1?'공기 올리러 가기':'씨앗 뿌리러 가기'} →</button></div>}
     <div className="sky-caption">{step===0?'물을 천천히 모아 보자':step===1?(state.cooled?'공기가 차가워졌어!':'공기를 더 높이 올려 보자'):step===2?(state.formed?'구름이 생겼어!':state.cooled?'씨앗을 기다리는 중!':'공기를 더 높이 올려 보자'):step===3?(state.formed?`${typeName(settings.cloudType)} 모양으로 자라고 있어!`:`이 조건에서 ${typeName(settings.cloudType)}이(가) 될 수 있어`):settings.rain>0?'물방울이 모여 비가 내려!':'내 구름을 둘러봐'}</div>
   </div>
+    {step===1&&<div className="lift-source-picker" onPointerDown={e=>e.stopPropagation()}><strong>누가 공기를 움직일까?</strong><div>{sources.map(source=><button key={source.id} aria-pressed={(settings.liftSource??'sun')===source.id} className={(settings.liftSource??'sun')===source.id?'active':''} onClick={()=>onChange({liftSource:source.id})}><span>{source.icon}</span>{source.label}</button>)}</div></div>}
+  </>
 }
 export default function Home(){
  const [appTab,setAppTab]=useState<'factory'|'sky'>('factory');
