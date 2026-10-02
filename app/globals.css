@@ -99,3 +99,92 @@ main>[data-slot=tabs]{gap:0}.site-header{gap:18px}.product-tabs{height:50px!impo
 .cloud-needs-help strong{display:block;font-size:.9rem;line-height:1.5}
 .cloud-needs-help button{margin-top:10px;min-height:40px;padding:8px 14px;border:0;border-radius:10px;background:#147fa4;color:#fff;font-size:.88rem;font-weight:800}
 @media(max-width:520px){.sky-mode button{min-height:40px;padding:7px 10px}.cloud-needs-help{top:45%;padding:12px 14px}.cloud-needs-help strong{font-size:.82rem}}
+
+/* Saved clouds keep their chosen scenery behind the cloud and rain. */
+.gallery-art .cloud-canvas,.detail-art .cloud-canvas{position:relative;z-index:1}
+.gallery-art .rain-layer,.detail-art .rain-layer{z-index:2}
+
+/* Give the scene a real coordinate space so the existing pan gesture can move it. */
+.sky-builder{--tray-h:184px}
+.sky-builder-scene{position:absolute;inset:0;isolation:isolate}
+.sky-pan-hint{position:absolute;z-index:14;left:50%;bottom:72px;transform:translateX(-50%);padding:8px 14px;border-radius:20px;background:#174f71b8;color:#fff;font-size:.75rem;white-space:nowrap;pointer-events:none}
+.cloud-tray-list{min-height:0;overflow-y:hidden;padding-bottom:8px;touch-action:pan-x}
+.tray-cloud{grid-template-rows:76px minmax(22px,auto) minmax(20px,auto);align-content:start;padding:6px 7px 10px;touch-action:pan-x;min-height:138px}
+.tray-cloud strong{display:block;line-height:1.5;padding-bottom:2px}
+.tray-cloud>span{display:block;line-height:1.5;padding-bottom:2px}
+@media(max-width:760px){
+ .sky-builder-scene{right:auto;width:1200px;left:calc((100% - 1200px)*var(--sky-pan,.5))}
+ .sky-builder{--tray-h:180px}
+ .cloud-tray{grid-template-rows:26px minmax(0,1fr)}
+ .tray-cloud{grid-template-rows:57px minmax(22px,auto) minmax(20px,auto);min-height:116px;padding:5px 6px 10px}
+ .tray-cloud strong{font-size:.72rem;line-height:1.5}
+ .tray-cloud>span{font-size:.64rem;line-height:1.5}
+}
+
+/* Editor flow: settings, unobstructed sky, cloud tray, then save. */
+.sky-builder{display:flex;flex-direction:column;height:auto;min-height:0;overflow:visible;background:#f3f9fc;color:#174358}
+.sky-editor-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px 8px}
+.sky-editor-header h1{margin:0;font-size:1.45rem;letter-spacing:-.04em}
+.sky-editor-header p{margin:4px 0 0;font-size:.8rem;color:#51778a;line-height:1.5}
+.sky-editor-header .sky-clear-button{position:static;flex:none;color:#52768a;background:#fff;border-color:#c6dde7;font-size:.75rem;opacity:1}
+.sky-editor-header .sky-clear-button:disabled{opacity:.4}
+.sky-settings{padding:8px 24px 12px}
+.sky-setting-tabs{display:flex;gap:8px}
+.sky-setting-tabs>button{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;border:1px solid #c3dfe9;background:#fff;color:#245c73;border-radius:12px;font:inherit;cursor:pointer}
+.sky-setting-tabs>button[aria-expanded=true]{border-color:#177fa3;background:#e4f4fa}
+.sky-setting-tabs strong{font-size:.84rem}.sky-setting-tabs span{font-size:.77rem;color:#5b7d8e}.sky-setting-tabs b{margin-left:auto}
+.sky-builder-controls{position:static;transform:none;display:block;margin-top:8px;padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;overflow:visible}
+.sky-builder-controls:empty{display:none}
+.sky-control-group{padding:10px;background:#e6f2f7;border:0;border-radius:12px}
+.sky-control-group>strong{display:none}.sky-control-group>div{display:flex;flex-wrap:wrap;gap:6px}
+.sky-control-group button{height:auto;min-height:44px;padding:8px 14px;background:#fff;color:#3a6a7d;border:1px solid #c1dbe6;font-size:.82rem}
+.sky-control-group button.active{background:#137fa4;color:#fff;border-color:#137fa4}
+.sky-builder-stage{position:relative;inset:auto;height:min(62svh,650px);min-height:380px;flex:none;isolation:isolate}
+.sky-builder-sun{pointer-events:none}
+.sky-builder-instruction{margin:0;padding:9px 24px;color:#5c7b8b;font-size:.75rem;line-height:1.5}
+.sky-pan-position{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;width:110px;height:6px;border-radius:8px;background:#ffffff59;pointer-events:none}
+.sky-pan-position i{display:block;position:absolute;width:28%;height:100%;background:#fff;border-radius:8px}
+.cloud-tray{position:relative;inset:auto;height:auto;display:block;padding:12px 24px 14px;box-shadow:none;background:#e9f4f9;backdrop-filter:none}
+.cloud-tray-heading{border:0;flex-direction:row;justify-content:space-between;margin-bottom:10px}
+.cloud-tray-list{padding:2px 2px 10px;min-height:148px;scroll-padding:4px;touch-action:pan-x}
+.tray-cloud{min-height:136px;flex-basis:130px;grid-template-rows:76px 24px 22px;padding:6px 8px 10px;align-content:start;box-sizing:border-box}
+.tray-cloud strong,.tray-cloud>span{align-self:center;line-height:1.5;padding:2px 0}
+.sky-builder-actions{position:relative;inset:auto;display:flex;flex-wrap:wrap;gap:8px;padding:12px 24px max(12px,env(safe-area-inset-bottom));border:0;border-radius:0;background:#f3f9fc;box-shadow:none;backdrop-filter:none;color:#235d76}
+.sky-builder-actions button{height:44px;padding:0 14px;background:#e1edf4;color:#235d76;border:1px solid #c1d8e4;font-size:.8rem}
+.sky-builder-actions button:first-child{background:#137fa4;color:#fff;border-color:#137fa4;min-width:140px;flex:1}
+.sky-builder-actions button:disabled{opacity:.4}.sky-builder-actions button span{display:inline}
+.sky-export-status{margin:0;padding:0 24px 14px;font-size:.8rem;line-height:1.5;color:#32697e}
+.sun-handle{width:46px;height:46px;border-width:1px;background:#eef8ffe8;box-shadow:0 0 0 5px #ffffff35;color:#49758b;gap:0;display:flex;flex-direction:column}
+.sun-handle span{font-size:.6rem;line-height:1.1;font-weight:800}
+.sky-colors{width:auto;padding:7px;border-radius:16px;bottom:78px}
+.sky-colors.expanded{max-width:calc(100% - 24px)}
+.color-panel-toggle{display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:12px;background:#f6fbff;color:#285f75;min-height:40px;padding:7px 12px;font:inherit;font-weight:800;font-size:.8rem}
+.color-panel-toggle i{width:20px;height:20px;border:1px solid #96b9c7;border-radius:50%}
+.sky-colors .colors{margin-top:8px}
+@media(max-width:760px){
+ .sky-editor-header{padding:12px 12px 4px;align-items:flex-start}
+ .sky-editor-header h1{font-size:1.15rem}.sky-editor-header p{font-size:.73rem;max-width:270px}
+ .sky-editor-header .sky-clear-button{width:40px;height:40px;padding:0;font-size:0}
+ .sky-settings{padding:8px 12px 12px}
+ .sky-setting-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .sky-setting-tabs>button{min-width:0;flex-wrap:wrap;column-gap:5px;row-gap:2px;padding:7px 9px;text-align:left;min-height:58px}
+ .sky-setting-tabs span{order:3;flex-basis:100%;font-size:.7rem;line-height:1.5}.sky-setting-tabs strong{font-size:.8rem}
+ .sky-control-group button{flex:1;min-width:68px;padding:8px 10px;font-size:.76rem}
+ .sky-builder-stage{height:53svh;min-height:340px;max-height:560px}
+ .sky-builder-instruction{padding:8px 12px;font-size:.7rem}
+ .cloud-tray{padding:10px 12px 8px}
+ .cloud-tray-list{min-height:126px;gap:8px}
+ .tray-cloud{flex-basis:108px;grid-template-rows:57px 24px 22px;min-height:118px;padding:5px 7px 10px}
+ .tray-cloud strong{font-size:.72rem}.tray-cloud>span{font-size:.64rem}
+ .sky-builder-actions{padding:10px 12px max(12px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .sky-builder-actions button:first-child{grid-column:1/-1;width:100%;height:48px;font-size:.9rem}
+ .sky-builder-actions button{padding:0 5px;font-size:.7rem;gap:4px;min-width:0}
+ .sky-builder-actions svg{width:15px}.sky-builder-actions button span{display:inline}
+ .sky-export-status{padding:0 12px 12px;font-size:.74rem}
+ .cloud-size-tools{bottom:30px}
+}
+.time-night .sky-builder-sun svg{display:block}
+.sky-setting-tabs button:focus-visible,.sky-control-group button:focus-visible,.sky-builder-actions button:focus-visible,.color-panel-toggle:focus-visible{outline:3px solid #e9b340;outline-offset:2px}
+.moon-setting-note{margin:0 0 8px;color:#416e84;font-size:.78rem;line-height:1.5}
+
+@media(max-width:760px){.tray-cloud strong{font-size:.82rem}.tray-cloud>span{font-size:.75rem}.sky-builder-actions button{font-size:.78rem}.sky-setting-tabs span{font-size:.76rem}}

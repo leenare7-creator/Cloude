@@ -15,9 +15,9 @@ export function paintRain(ctx:CanvasRenderingContext2D,s:CloudSettings,x:number,
   }
   ctx.restore();
 }
-async function skyImage(){const img=new Image();img.src='/sky.png';await img.decode();return img}
+async function skyImage(s:CloudSettings){const img=new Image();img.src=`/lift-${s.liftSource??'sun'}.webp`;await img.decode();return img}
 export async function cloudPngBlob(s:CloudSettings,maker:string){
-  const [sky]=await Promise.all([skyImage(),waitForCloudTexture()]);
+  const [sky]=await Promise.all([skyImage(s),waitForCloudTexture()]);
   const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=1000;
   const ctx=canvas.getContext('2d')!;
   const scale=Math.max(canvas.width/sky.width,canvas.height/sky.height),sw=canvas.width/scale,sh=canvas.height/scale;
