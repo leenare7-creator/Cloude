@@ -152,3 +152,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 /* A short direction cue beneath the open current, independent of touch targets. */
 .air-flow-rise-arrow{position:absolute;left:50%;width:22px;height:26px;transform:translateX(-50%);fill:#edf8ff;pointer-events:none}
 @media(max-width:790px){.air-flow-rise-arrow{left:43%}}
+
+/* Preserve the translucent guide; shadow only its white text. */
+@media(max-width:790px){
+ .mobile-swipe-guide span{text-shadow:0 1px 2px rgba(8,34,55,.95),0 2px 6px rgba(8,34,55,.8),0 0 12px rgba(8,34,55,.45)}
+}

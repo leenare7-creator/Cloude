@@ -36,3 +36,4 @@ Reference: Earth Nullschool wind streamlines (https://earth.nullschool.net/ko/) 
 - Touch verification: 50 → 100 → 6 updated numeric state and animated pixels, with altitude 0m and panel height 357.7px unchanged. Height swipe independently changed altitude to 2500m. At humidity 90%, height 2500m and 40 seeds, cloud and condensation connection appeared. Widths 320/390/430/1440 had no horizontal overflow, no browser JavaScript errors, and reduced-motion pixels stayed static. Additional final captures inspected 750px and 1440px.
 
 - Add one short, translucent upward arrow beneath the airflow source band. It follows the altitude anchor, remains non-interactive and dims as the cloud forms.
+- Readability revision: preserve the original white text, translucent filled arrows, sizes and spacing. Add a layered dark text shadow only; no label capsule, navy text or arrow outline. Verify over the sun at mobile widths.
