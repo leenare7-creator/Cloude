@@ -17,7 +17,7 @@ type RecordCloud=CloudSettings&{id:number;maker:string;decoration:string;created
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const chapters=[
   {icon:'💧',name:'물 모으기',title:'하늘에 물을 모아 줘',copy:'하늘을 손가락으로 쓸어 봐. 눈에 보이지 않는 물이 조금씩 모여.',action:'하늘을 쓸어 물을 모으기',tip:'물이 많으면 구름이 더 쉽게 생겨.'},
-  {icon:'↑',name:'공기 올리기',title:'무엇이 공기를 움직일까?',copy:'공기를 움직이는 원인을 골라 봐. 공기 방울을 위로 끌어 높이를 바꾸고, 오른쪽에서는 위로 밀어 올리는 힘을 바꿔 봐.',action:'공기를 끌고, 오른쪽에서 솟는 힘 바꾸기',tip:'햇볕은 공기를 위로 솟게 하고, 찬 공기는 넓게 밀어 올려. 산과 밤, 높은 하늘도 각자 다른 움직임을 만들어.'},
+  {icon:'↑',name:'공기 올리기',title:'무엇이 공기를 움직일까?',copy:'공기를 움직이는 원인을 골라 봐. 하늘 왼쪽을 위로 쓸어 공기를 올리고, 오른쪽을 위아래로 쓸어 솟는 힘을 바꿔 봐.',action:'공기를 끌고, 오른쪽에서 솟는 힘 바꾸기',tip:'햇볕은 공기를 위로 솟게 하고, 찬 공기는 넓게 밀어 올려. 산과 밤, 높은 하늘도 각자 다른 움직임을 만들어.'},
   {icon:'✧',name:'씨앗 뿌리기',title:'구름의 씨앗을 뿌려 줘',copy:'하늘을 톡톡 눌러 작은 입자를 뿌려 봐. 물방울이 달라붙을 자리가 생겨.',action:'하늘을 톡톡 눌러 씨앗 뿌리기',tip:'씨앗은 구름 알갱이의 수와 결에 보탬이 돼. 솟거나 퍼지는 방향은 앞에서 고른 공기의 움직임이 정해.'},
   {icon:'〰',name:'바람과 시간',title:'바람을 불고 구름을 키워 봐',copy:'하늘을 좌우로 쓸면 바람이 바뀌어. 위아래로 쓸면 구름이 자라는 시간이 달라져.',action:'좌우로 바람, 위아래로 시간',tip:'바람은 구름을 옆으로 늘이고, 자란 시간은 덩이의 폭과 두께를 바꿔.'},
   {icon:'☁',name:'결과 보기',title:'내 구름이 자란 이야기를 봐',copy:'앞에서 만든 조건이 어떤 구름으로 이어졌는지 살펴봐. 해와 시점을 움직이고 별명을 적어 도서관에 올려.',action:'구름을 둘러보고 이야기를 읽기',tip:'구름 모양과 비는 공기가 움직이고 물방울이 자란 결과야.'},
@@ -28,7 +28,7 @@ const sources:{id:LiftSource;icon:string;label:string}[]=[{id:'sun',icon:'☀',l
 function storyEffect(step:number,s:CloudSettings){
  const state=cloudState(s),source=s.liftSource??'sun';
  if(step===0)return {title:`물 ${s.humidity}%`,description:'물기가 많을수록 올라가며 식은 공기가 구름을 만들기 쉬워져.'};
- if(step===1)return {title:`${liftName(source)} · ${s.height.toLocaleString()}m · ${stabilityName(s.energy)}`,description:state.cooled?'공기가 움직이며 식었어. 움직이는 원인과 솟는 힘이 구름의 높이와 모양에 영향을 줘.':'공기 방울을 더 높이 올리면 식으면서 물이 모일 수 있어.'};
+ if(step===1)return {title:`${liftName(source)} · ${s.height.toLocaleString()}m · ${stabilityName(s.energy)}`,description:state.cooled?'공기가 움직이며 식었어. 움직이는 원인과 솟는 힘이 구름의 높이와 모양에 영향을 줘.':'공기를 더 높이 올리면 식으면서 물이 모일 수 있어.'};
  if(step===2)return {title:`씨앗 ${s.nuclei}개`,description:state.formed?'씨앗이 늘면 물방울이 맺힐 자리가 늘고, 구름의 크기와 작은 결이 조금씩 달라져.':'물을 모으고 공기를 더 높이 올려야 변화가 보이기 시작해.'};
  if(step===3)return {title:`바람 ${s.wind} · ${growthName(s.growth??35)}`,description:state.formed?`바람이 ${typeName(s.cloudType)}을(를) 옆으로 늘이고, 자란 시간이 두께를 바꿔. 구름 종류에 따라 변화의 폭은 달라.`:'아직 구름이 생기지 않았어. 물과 높이, 씨앗을 먼저 살펴봐.'};
  return {title:state.formed?`${typeName(s.cloudType)} 완성!`:'구름을 만드는 중',description:state.formed?`${cloudStory(s)} ${s.rain>0?'물방울이 커져 비도 내려.':'지금은 비가 내리지 않아.'}`:'물을 모으고, 공기를 올리고, 씨앗을 뿌려 봐.'};
@@ -138,7 +138,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     {step===1&&<div className="altitude-guide"><span>높이</span><span>0m</span></div>}
 
     <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></div>
-    {(step===1||step===2)&&<AirFlow settings={settings} step={step}/>}
+    {(step===1||step===2)&&<AirFlow settings={settings}/>}
     {step===1&&<div className="lift-strength-status" aria-label={`솟는 힘 ${settings.energy}, ${liftStrengthLabel(settings.energy)}`}><span>솟는 힘 <b>{settings.energy}<small> / 100</small></b></span><strong>{liftStrengthLabel(settings.energy)}</strong><small className="lift-strength-hint">위아래로 쓸어 바꾸기</small></div>}
     {step===4&&<div className="sun-handle" style={{left:`${settings.lightX}%`,top:`${8+settings.shadow*.52}%`}} aria-label="빛을 끌어 그림자 바꾸기">{settings.liftSource==='night'?<Moon size={22}/>:<Sun size={22}/>}<span>빛</span></div>}
     {(step===1||step===3)&&<div className="sky-height-rail" role="slider" tabIndex={0} aria-label={step===1?'공기를 위로 밀어 올리는 힘':'구름이 자란 시간'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={step===1?settings.energy:settings.growth??35} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const key=step===1?'energy':'growth';onChange({[key]:clamp((step===1?settings.energy:settings.growth??35)+(e.key==='ArrowUp'?2:-2),0,100)})}}}><span>{step===1?'세게 솟아':'오래 자랐어'}</span><i className="rail-line"><b style={{bottom:`${step===1?settings.energy:settings.growth??35}%`}}/></i><span>{step===1?'조금씩 올라':'자라는 중'}</span><span>{step===1?'옆으로 퍼져':'막 생겼어'}</span></div>}

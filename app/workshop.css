@@ -154,7 +154,3 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 /* The canvas is a non-interactive overlay; existing sky gestures retain ownership. */
 .air-flow-graphic{position:absolute;inset:0;z-index:2;pointer-events:none}
 .air-flow-graphic canvas{position:absolute;inset:0;width:100%;height:100%}
-.air-flow-label{position:absolute;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;color:white;text-shadow:0 1px 6px #184b72;transition:opacity .35s;pointer-events:none}
-.air-flow-label>span{font-size:.85rem;font-weight:650}.air-flow-label>small{font-size:.58rem;opacity:.85}
-.air-flow-graphic.is-condensing .air-flow-label{opacity:.55;transform:translate(-50%,35px)}
-@media(max-width:790px){.air-flow-label{left:43%}.air-flow-label>span{font-size:.75rem}.air-flow-label>small{font-size:.52rem}}

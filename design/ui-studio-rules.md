@@ -23,20 +23,14 @@ Verification: 320, 390, 430, 1440px; initial, lifted air, formed cloud, result, 
 
 - Follow-up: removed the sky badge; water/height/seeds occupy the upper-left corner on every viewport. Switched the accent family from green to sky blue.
 
-## Air-lift feedback
+## Open airflow visualization
 
-- Keep water/height/seed readings at the upper left, numeric strength + state at the upper right. Strength remains readable before cloud formation.
-- Height moves the air parcel; strength changes five translucent flow curves continuously, from spreading sideways to rising vertically. Higher strength shortens the animation period.
-- The mobile right third is a full-height strength gesture zone. The swipe arrow disappears after the first strength gesture; the numeric state and motion remain.
-- Simplify the altitude guide to a thin reference line. Keep the air parcel clear of the caption at zero height.
-- Reduced-motion users see static flow curves. Motion is illustrative input feedback, not a simulated physical velocity.
-- Visual revision: the original gesture zone missed swipes near the bottom, changing height unintentionally. Expanded the right zone to full scene height; strength gestures now leave altitude and parcel position unchanged.
+Reference: Earth Nullschool wind streamlines (https://earth.nullschool.net/ko/) for continuous flow paths; NASA Up, Up And Away (https://svs.gsfc.nasa.gov/10975/) for rising air leading into cloud growth. The approved second concept image removes the old oval, glitter and central label.
 
-## Graphic airflow and condensation
-
-- Replace the fixed circle and dotted SVG paths with a transparent, deforming blue parcel and particles. Weak force widens the parcel and sends particles outward; strong force narrows and lengthens it with faster upward paths. Intermediate force blends continuously.
-- Height alone moves the parcel centre. Preserve the numeric strength panel, full-height right gesture zone, blue accents and original cloud rendering.
-- Keep airflow mounted between lift and seed steps. Cooling and seeds use the existing model; condensation intensity tracks cloud visibility, so one seed produces only a slight change. Droplets travel from the parcel into the cloud, while the parcel fades.
-- Labels describe waiting for seeds rather than claiming condensation before any seeds exist. Respect reduced motion with stationary particles. Canvas uses at most 2× pixel density and cleans up its animation and resize observer.
-- Observed comparison: weak 6, middle 50 and strong 100 visibly differ in silhouette and particle paths. Swiping force left the 0m altitude, parcel centre and 357.7px sky panel unchanged. Raising height changed altitude independently. Water 90%, height 2500m and 40 seeds produced a cloud with connecting droplets. Mobile 320/390/430 and desktop 1440 had no horizontal overflow; no browser JavaScript errors, reduced-motion pixels stayed unchanged.
-- Visual revision: align particle origin with the mobile label using the same viewport breakpoint, rather than testing the canvas width; smaller desktop scenes otherwise misalign.
+- Render open, soft blue-white streaks over the realistic sky, with transparent feathered ends. No boundary, circle, central text or sparkling vapor particles. Independent strands begin across a diffuse band rather than one luminous point.
+- Weak force makes a broad low lateral fan; middle force bends upward with some widening; strong force creates a narrower tall current. Speed, width and path height blend continuously as strength changes, without re-seeding animation phases. Height moves the flow anchor separately.
+- Keep water/height/seed readings upper left, strength value and state upper right. Existing captions and Story explain gestures outside the central visual; update old air-bubble wording to sky swipes. Mobile right third retains full-height strength gesture ownership.
+- Keep airflow across lift and seed steps. The existing model determines cooling and condensation; droplets appear only with cooling and seeds and their intensity follows cloud visibility. Existing Three.js/fallback clouds remain intact.
+- Reduced motion freezes time. Use an explicit non-interactive canvas, max 2× pixel density, and clean up rAF plus ResizeObserver.
+- Visual comparison: initial open currents were too wide at maximum force and too faint at weak force. Narrowed the strong-flow source/span and increased strand contrast while keeping soft transparent edges. The final current has no enclosed silhouette or central label.
+- Touch verification: 50 → 100 → 6 updated numeric state and animated pixels, with altitude 0m and panel height 357.7px unchanged. Height swipe independently changed altitude to 2500m. At humidity 90%, height 2500m and 40 seeds, cloud and condensation connection appeared. Widths 320/390/430/1440 had no horizontal overflow, no browser JavaScript errors, and reduced-motion pixels stayed static. Additional final captures inspected 750px and 1440px.
