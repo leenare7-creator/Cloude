@@ -257,3 +257,33 @@
 }
 
 .factory-tab .studio-grid>.control-panel>*{flex-shrink:0}
+
+/* Keep overflow visible even when the OS hides native overlay scrollbars. */
+.factory-tab .story-panel-shell{position:relative;min-width:0;width:100%;height:var(--story-height,560px)}
+.factory-tab .story-panel-shell>.control-panel{height:100%;min-height:0;max-height:none;display:block;overflow-y:auto;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:#5e9db5 #e6f1f5}
+.factory-tab .story-panel-content{display:flex;flex-direction:column;min-height:100%}
+.factory-tab .story-panel-content>*{flex-shrink:0}
+.factory-tab .result-story{scrollbar-width:none!important;padding-right:27px}
+.factory-tab .result-story::-webkit-scrollbar{display:none}
+.story-scroll-track{position:absolute;right:7px;top:17px;bottom:17px;width:4px;border-radius:8px;background:#deedf3;pointer-events:none}
+.story-scroll-track>div{position:absolute;left:0;width:100%;min-height:20px;border-radius:8px;background:#5d9bb3}
+.mobile-gesture-copy{display:none}
+@media(max-width:790px){
+ .factory-tab .studio-grid>.sky-panel{height:calc(var(--story-height,560px)*.7)}
+ .desktop-gesture-copy{display:none}.mobile-gesture-copy{display:inline}
+ .factory-tab .sky-height-rail{top:94px;bottom:70px}
+}
+
+/* Broad translucent arrows describe a gesture, without a slider or precise target. */
+.mobile-swipe-guide{display:none}
+@media(max-width:790px){
+ .factory-tab .sky-height-rail,.factory-tab .wind-hint{display:none}
+ .mobile-swipe-guide{position:absolute;z-index:3;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.88);text-align:center;user-select:none;pointer-events:none}
+ .mobile-swipe-guide.vertical{right:0;top:92px;bottom:65px;width:34%;flex-direction:column;gap:12px}
+ .mobile-lift-swipe-zone{pointer-events:auto;touch-action:none}
+ .mobile-swipe-guide span{font-size:.65rem;font-weight:600;line-height:1.5;text-shadow:0 1px 4px rgba(15,58,91,.28)}
+ .swipe-direction-arrow{display:block;flex-shrink:0;fill:white;opacity:.42;filter:drop-shadow(0 2px 8px rgba(29,71,97,.08));pointer-events:none}
+ .mobile-swipe-guide.vertical .swipe-direction-arrow{width:42px;height:92px}
+ .mobile-swipe-guide.horizontal{left:24px;bottom:71px;gap:10px}
+ .mobile-swipe-guide.horizontal .swipe-direction-arrow{width:82px;height:38px}
+}
