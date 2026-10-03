@@ -31,3 +31,12 @@ Verification: 320, 390, 430, 1440px; initial, lifted air, formed cloud, result, 
 - Simplify the altitude guide to a thin reference line. Keep the air parcel clear of the caption at zero height.
 - Reduced-motion users see static flow curves. Motion is illustrative input feedback, not a simulated physical velocity.
 - Visual revision: the original gesture zone missed swipes near the bottom, changing height unintentionally. Expanded the right zone to full scene height; strength gestures now leave altitude and parcel position unchanged.
+
+## Graphic airflow and condensation
+
+- Replace the fixed circle and dotted SVG paths with a transparent, deforming blue parcel and particles. Weak force widens the parcel and sends particles outward; strong force narrows and lengthens it with faster upward paths. Intermediate force blends continuously.
+- Height alone moves the parcel centre. Preserve the numeric strength panel, full-height right gesture zone, blue accents and original cloud rendering.
+- Keep airflow mounted between lift and seed steps. Cooling and seeds use the existing model; condensation intensity tracks cloud visibility, so one seed produces only a slight change. Droplets travel from the parcel into the cloud, while the parcel fades.
+- Labels describe waiting for seeds rather than claiming condensation before any seeds exist. Respect reduced motion with stationary particles. Canvas uses at most 2× pixel density and cleans up its animation and resize observer.
+- Observed comparison: weak 6, middle 50 and strong 100 visibly differ in silhouette and particle paths. Swiping force left the 0m altitude, parcel centre and 357.7px sky panel unchanged. Raising height changed altitude independently. Water 90%, height 2500m and 40 seeds produced a cloud with connecting droplets. Mobile 320/390/430 and desktop 1440 had no horizontal overflow; no browser JavaScript errors, reduced-motion pixels stayed unchanged.
+- Visual revision: align particle origin with the mobile label using the same viewport breakpoint, rather than testing the canvas width; smaller desktop scenes otherwise misalign.

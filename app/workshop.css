@@ -132,12 +132,6 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .sky-mode button{border:0!important}
 @media(min-width:360px) and (max-width:790px){.factory-tab .step-nav button{font-size:.7rem}}
 /* Height sets the parcel position; strength changes only the surrounding flow. */
-.air-flow{position:absolute;left:50%;width:260px;height:174px;transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:top .12s ease-out}
-.air-flow-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.air-flow-lines path{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-dasharray:7 14;opacity:.62;animation:air-current var(--flow-duration,2s) linear infinite}
-@keyframes air-current{to{stroke-dashoffset:-42}}
-.air-flow .air-orb{left:50%;top:50%;width:90px;height:90px;background:#ffffff17;border:1px solid #ffffffa6;box-shadow:inset 0 0 18px #ffffff35,0 0 20px #ffffff18;gap:5px;transform:translate(-50%,-50%)}
-.air-flow .air-orb span{font-size:.95rem;font-weight:650}.air-flow .air-orb small{font-size:.57rem;font-weight:500}
 .lift-strength-status{position:absolute;right:24px;top:58px;z-index:7;width:138px;padding:10px 12px;border:1px solid #ffffff50;border-radius:12px;background:#1747658c;color:#fff;backdrop-filter:blur(8px);pointer-events:none}
 .lift-strength-status>span{display:flex;align-items:baseline;justify-content:space-between;font-size:.67rem;color:#e5f5ff}
 .lift-strength-status b{font-size:1rem;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}.lift-strength-status b small{font-size:.59rem;font-weight:500;opacity:.7}
@@ -146,9 +140,6 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .factory-tab .altitude-guide{left:22px;top:90px;bottom:66px;border-left:1px solid #ffffff65;padding-left:7px;font-size:.66rem;font-weight:500}
 .factory-tab .step-1 .sky-height-rail{top:176px;bottom:72px;right:24px;height:auto}
 @media(max-width:790px){
- .air-flow{left:43%;width:226px;height:151px}
- .air-flow .air-orb{width:76px;height:76px}
- .air-flow .air-orb span{font-size:.85rem}.air-flow .air-orb small{font-size:.52rem}
  .lift-strength-status{right:12px;top:54px;width:108px;padding:8px;border-radius:10px}
  .lift-strength-status>span{font-size:.58rem}.lift-strength-status b{font-size:.9rem}.lift-strength-status b small{font-size:.5rem}
  .lift-strength-status>strong{font-size:.65rem}.lift-strength-hint{font-size:.52rem;letter-spacing:-.03em}
@@ -158,4 +149,12 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
  .mobile-lift-swipe-zone .swipe-direction-arrow{width:30px!important;height:68px!important;opacity:.32;transition:opacity .25s}
  .mobile-lift-swipe-zone.guide-used .swipe-direction-arrow{opacity:0}
 }
-@media(prefers-reduced-motion:reduce){.air-flow-lines path{animation:none;stroke-dasharray:none;opacity:.38}.air-flow{transition:none}}
+
+
+/* The canvas is a non-interactive overlay; existing sky gestures retain ownership. */
+.air-flow-graphic{position:absolute;inset:0;z-index:2;pointer-events:none}
+.air-flow-graphic canvas{position:absolute;inset:0;width:100%;height:100%}
+.air-flow-label{position:absolute;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;color:white;text-shadow:0 1px 6px #184b72;transition:opacity .35s;pointer-events:none}
+.air-flow-label>span{font-size:.85rem;font-weight:650}.air-flow-label>small{font-size:.58rem;opacity:.85}
+.air-flow-graphic.is-condensing .air-flow-label{opacity:.55;transform:translate(-50%,35px)}
+@media(max-width:790px){.air-flow-label{left:43%}.air-flow-label>span{font-size:.75rem}.air-flow-label>small{font-size:.52rem}}

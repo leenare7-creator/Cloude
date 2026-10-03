@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {BookOpen,Plus,Minus,RotateCcw,Sun,Moon,Hand,Cloud,RefreshCcw,Download,Copy,CloudSun} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -7,6 +7,7 @@ import {Dialog,DialogContent,DialogDescription,DialogTitle} from '@/components/u
 import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
 import {SkyBuilder} from '@/components/sky-builder';
 import {CloudThree} from '@/components/cloud-three';
+import {AirFlow} from '@/components/air-flow';
 import {CloudSettings,DEFAULT_CLOUD,CLOUD_TYPES,cloudState,cloudStory,cloudInfluences,deriveCloud,liftName,stabilityName,growthName,type LiftSource} from '@/lib/cloud-model';
 import {drawCloud,subscribeCloudTexture} from '@/lib/cloud-render';
 import {cloudPngBlob} from '@/lib/cloud-export';
@@ -70,15 +71,6 @@ function InfluenceCard({settings,compact=false}:{settings:CloudSettings;compact?
  return <section className={`influence-card${compact?' compact':''}`} aria-label={`${typeName(settings.cloudType)}을 만든 주요 조건`}><div className="influence-heading"><div><span>WHY THIS CLOUD?</span><strong>왜 {typeName(settings.cloudType)}이 되었을까?</strong></div><small>위에 있을수록 더 크게 작용했어.</small></div><div className="influence-list">{items.map((item,index)=><div className="influence-item" key={`${item.label}-${index}`}><div className="influence-rank">{index+1}</div><div className="influence-copy"><strong>{item.label}<b>{item.value}</b></strong><p>{item.reason}</p></div><span className={`impact impact-${item.level.replace(' ','-')}`}>{item.level}</span></div>)}</div><p className="influence-note">구름 씨앗·바람처럼 종류를 직접 바꾸지 않아도 결, 크기, 비의 양을 바꾸는 조건이 있어.</p></section>;
 }
 const liftStrengthLabel=(energy:number)=>energy<34?'옆으로 퍼지려 해':energy<68?'조금씩 올라가':'높이 솟으려 해';
-function AirFlow({height,energy}:{height:number;energy:number}){
- const force=energy/100;
- return <div className="air-flow" style={{top:`${60-height/2500*26}%`,'--flow-duration':`${2.8-force*1.65}s`} as CSSProperties}>
-  <svg className="air-flow-lines" viewBox="-150 -100 300 200" aria-hidden="true">
-   {[-2,-1,0,1,2].map(index=>{const side=Math.sign(index),lane=Math.abs(index),endX=side*(52+lane*27)*(1-force*.7),endY=-15-force*(56+lane*10);return <path key={index} d={`M ${side*(24+lane*4)} 30 C ${side*(44+lane*6)} 22, ${endX} ${endY+24}, ${endX} ${endY}`} style={{animationDelay:`${-lane*.35}s`}}/>})}
-  </svg>
-  <div className="air-orb"><span>공기</span><small>위로 끌어 봐</small></div>
- </div>;
-}
 function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSettings;onChange:(patch:Partial<CloudSettings>)=>void;onVisitStep:(step:number)=>void}){
   const stage=useRef<HTMLDivElement>(null),active=useRef(false),last=useRef<{x:number;y:number}>({x:0,y:0}),start=useRef<{x:number;y:number}>({x:0,y:0}),gesture=useRef<'water'|'height'|'seed'|'sun'|'pending'|'orbit'|'flow'|'level'|null>(null),gestureValue=useRef(0),windAtDown=useRef(67),levelAtDown=useRef(0),levelSensitivity=useRef(135),touches=useRef<Map<number,{x:number;y:number}>>(new Map()),pinch=useRef<number|null>(null);
   const [liftGuideUsed,setLiftGuideUsed]=useState(false);
@@ -146,7 +138,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     {step===1&&<div className="altitude-guide"><span>높이</span><span>0m</span></div>}
 
     <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></div>
-    {step===1&&<AirFlow height={settings.height} energy={settings.energy}/>}
+    {(step===1||step===2)&&<AirFlow settings={settings} step={step}/>}
     {step===1&&<div className="lift-strength-status" aria-label={`솟는 힘 ${settings.energy}, ${liftStrengthLabel(settings.energy)}`}><span>솟는 힘 <b>{settings.energy}<small> / 100</small></b></span><strong>{liftStrengthLabel(settings.energy)}</strong><small className="lift-strength-hint">위아래로 쓸어 바꾸기</small></div>}
     {step===4&&<div className="sun-handle" style={{left:`${settings.lightX}%`,top:`${8+settings.shadow*.52}%`}} aria-label="빛을 끌어 그림자 바꾸기">{settings.liftSource==='night'?<Moon size={22}/>:<Sun size={22}/>}<span>빛</span></div>}
     {(step===1||step===3)&&<div className="sky-height-rail" role="slider" tabIndex={0} aria-label={step===1?'공기를 위로 밀어 올리는 힘':'구름이 자란 시간'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={step===1?settings.energy:settings.growth??35} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const key=step===1?'energy':'growth';onChange({[key]:clamp((step===1?settings.energy:settings.growth??35)+(e.key==='ArrowUp'?2:-2),0,100)})}}}><span>{step===1?'세게 솟아':'오래 자랐어'}</span><i className="rail-line"><b style={{bottom:`${step===1?settings.energy:settings.growth??35}%`}}/></i><span>{step===1?'조금씩 올라':'자라는 중'}</span><span>{step===1?'옆으로 퍼져':'막 생겼어'}</span></div>}
@@ -157,7 +149,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
 
     {(step===0||step===2)&&<div className="sky-mode" onPointerDown={e=>e.stopPropagation()}><button className={mode==='add'?'active':''} onClick={()=>setMode('add')} aria-pressed={mode==='add'}><Plus size={16}/> 더하기</button><button className={mode==='remove'?'active':''} onClick={()=>setMode('remove')} aria-pressed={mode==='remove'}><Minus size={16}/> 빼기</button></div>}
     {step>=2&&missingStep!==null&&missingStep<step&&<div className="cloud-needs-help" onPointerDown={e=>e.stopPropagation()} role="status"><strong>{missingStep===0?'구름이 될 물을 먼저 모아 줘.':missingStep===1?`공기를 올려야 구름이 생겨. 지금은 ${settings.height.toLocaleString()}m야.`:'물방울이 맺힐 씨앗을 뿌려 줘.'}</strong><button onClick={()=>onVisitStep(missingStep)}>{missingStep===0?'물 모으러 가기':missingStep===1?'공기 올리러 가기':'씨앗 뿌리러 가기'} →</button></div>}
-    <div className="sky-caption">{step===0?'물을 천천히 모아 보자':step===1?(state.cooled?'공기가 차가워졌어!':'공기를 더 높이 올려 보자'):step===2?(state.formed?'구름이 생겼어!':state.cooled?'씨앗을 기다리는 중!':'공기를 더 높이 올려 보자'):step===3?(state.formed?`${typeName(settings.cloudType)} 모양으로 자라고 있어!`:`이 조건에서 ${typeName(settings.cloudType)}이(가) 될 수 있어`):settings.rain>0?'물방울이 모여 비가 내려!':'내 구름을 둘러봐'}</div>
+    <div className="sky-caption">{step===0?'물을 천천히 모아 보자':step===1?(state.formed?'물방울이 모여 구름이 됐어!':state.cooled?'공기가 식었어! 씨앗을 기다려':'공기를 더 높이 올려 보자'):step===2?(state.formed?'구름이 생겼어!':state.cooled?'씨앗을 기다리는 중!':'공기를 더 높이 올려 보자'):step===3?(state.formed?`${typeName(settings.cloudType)} 모양으로 자라고 있어!`:`이 조건에서 ${typeName(settings.cloudType)}이(가) 될 수 있어`):settings.rain>0?'물방울이 모여 비가 내려!':'내 구름을 둘러봐'}</div>
   </div>
 
   </>
