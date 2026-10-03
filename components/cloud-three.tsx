@@ -32,6 +32,10 @@ export function CloudThree({settings,interactive=false,onReady}:{settings:CloudS
       const camera=new THREE.OrthographicCamera(-5,5,3,-3,.1,100);
       camera.position.z=10;
       const cloudCanvas=document.createElement('canvas');
+      // The GPU texture keeps a fixed size while the CPU preview may be smaller.
+      cloudCanvas.width=960;cloudCanvas.height=576;
+      const rasterCanvas=document.createElement('canvas');
+      const cloudContext=cloudCanvas.getContext('2d')!;
       const texture=new THREE.CanvasTexture(cloudCanvas);
       texture.colorSpace=THREE.SRGBColorSpace;
       texture.minFilter=THREE.LinearFilter;
@@ -50,7 +54,10 @@ export function CloudThree({settings,interactive=false,onReady}:{settings:CloudS
       let needsCheck=true,contextOkay=true,lastKey='',reportedReady=false;
       const redraw=()=>{
         if(disposed)return;
-        drawCloud(cloudCanvas,settingsRef.current,interactiveRef.current);
+        drawCloud(rasterCanvas,settingsRef.current,interactiveRef.current);
+        cloudContext.clearRect(0,0,cloudCanvas.width,cloudCanvas.height);
+        cloudContext.imageSmoothingEnabled=true;cloudContext.imageSmoothingQuality='high';
+        cloudContext.drawImage(rasterCanvas,0,0,cloudCanvas.width,cloudCanvas.height);
         texture.needsUpdate=true;
         needsCheck=true;
       };

@@ -85,7 +85,8 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     const p=norm(e);
     if(step===0||(step===2&&gesture.current==='seed')){
       const distance=Math.hypot(p.x-last.current.x,p.y-last.current.y);
-      const spacing=step===0?.028:.018,key=step===0?'humidity':'nuclei';
+      // A full-width sweep adds about 13% water or 16 seeds, with no event-rate dependency.
+      const spacing=step===0?.085:.065,key=step===0?'humidity':'nuclei';
       gestureValue.current=clamp(gestureValue.current+(mode==='add'?1:-1)*(first?1:distance/spacing),0,100);
       queueChange({[key]:Math.round(gestureValue.current)});
       if(first)puff(p.x,p.y);
@@ -125,7 +126,9 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
   const move=(e:React.PointerEvent)=>{const p=norm(e);touches.current.set(e.pointerId,p);if(touches.current.size===2&&step===4){const a=[...touches.current.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(pinch.current!==null){onChange({depth:Math.round(clamp(settings.depth+(d-pinch.current)*130,0,100))})}pinch.current=d;return}if(active.current)interact(e)};
   const up=(e:React.PointerEvent)=>{touches.current.delete(e.pointerId);pinch.current=null;active.current=false;setDrawing(false);gesture.current=null;if(stage.current?.hasPointerCapture(e.pointerId))stage.current.releasePointerCapture(e.pointerId)};
   const wheel=(e:React.WheelEvent)=>{if(step!==4)return;e.preventDefault();onChange({depth:Math.round(clamp(settings.depth-e.deltaY*.08,0,100))})};
-  return <><div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
+  return <>
+    {step===1&&<div className="lift-source-picker" onPointerDown={e=>e.stopPropagation()}><strong>먼저, 누가 공기를 올릴까?</strong><small>고르면 배경과 구름 모양이 달라져.</small><div>{sources.map(source=><button key={source.id} aria-pressed={(settings.liftSource??'sun')===source.id} className={(settings.liftSource??'sun')===source.id?'active':''} onClick={()=>onChange({liftSource:source.id})}><span>{source.icon}</span>{source.label}</button>)}</div></div>}
+  <div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
     {step>=1&&<LiftScene source={settings.liftSource??'sun'}/>}
     <div className="sky-label"><span>나의 하늘</span><small>{step===0?'하늘을 쓸어 봐':step===1?'공기를 위로 끌어 봐':step===2?'씨앗을 뿌려 봐':step===3?'바람과 시간을 바꿔 봐':'구름을 둘러봐'}</small></div>
     <div className="sky-readouts"><span>💧 {settings.humidity}%</span><span>↑ {settings.height.toLocaleString()}m</span><span>✧ {settings.nuclei}</span>{settings.rain>0&&<span>☂ {settings.rain}</span>}</div>
@@ -142,7 +145,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     {step>=2&&missingStep!==null&&missingStep<step&&<div className="cloud-needs-help" onPointerDown={e=>e.stopPropagation()} role="status"><strong>{missingStep===0?'구름이 될 물을 먼저 모아 줘.':missingStep===1?`공기를 올려야 구름이 생겨. 지금은 ${settings.height.toLocaleString()}m야.`:'물방울이 맺힐 씨앗을 뿌려 줘.'}</strong><button onClick={()=>onVisitStep(missingStep)}>{missingStep===0?'물 모으러 가기':missingStep===1?'공기 올리러 가기':'씨앗 뿌리러 가기'} →</button></div>}
     <div className="sky-caption">{step===0?'물을 천천히 모아 보자':step===1?(state.cooled?'공기가 차가워졌어!':'공기를 더 높이 올려 보자'):step===2?(state.formed?'구름이 생겼어!':state.cooled?'씨앗을 기다리는 중!':'공기를 더 높이 올려 보자'):step===3?(state.formed?`${typeName(settings.cloudType)} 모양으로 자라고 있어!`:`이 조건에서 ${typeName(settings.cloudType)}이(가) 될 수 있어`):settings.rain>0?'물방울이 모여 비가 내려!':'내 구름을 둘러봐'}</div>
   </div>
-    {step===1&&<div className="lift-source-picker" onPointerDown={e=>e.stopPropagation()}><strong>누가 공기를 움직일까?</strong><div>{sources.map(source=><button key={source.id} aria-pressed={(settings.liftSource??'sun')===source.id} className={(settings.liftSource??'sun')===source.id?'active':''} onClick={()=>onChange({liftSource:source.id})}><span>{source.icon}</span>{source.label}</button>)}</div></div>}
+
   </>
 }
 export default function Home(){
