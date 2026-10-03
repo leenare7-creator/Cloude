@@ -129,7 +129,6 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
   return <>
   <div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
     {step>=1&&<LiftScene source={settings.liftSource??'sun'}/>}
-    <div className="sky-label"><span>나의 하늘</span><small>{step===0?'하늘을 쓸어 봐':step===1?'공기를 위로 끌어 봐':step===2?'씨앗을 뿌려 봐':step===3?'바람과 시간을 바꿔 봐':'구름을 둘러봐'}</small></div>
     <div className="sky-readouts"><span>물 {settings.humidity}%</span><span>높이 {settings.height.toLocaleString()}m</span><span>씨앗 {settings.nuclei}</span>{settings.rain>0&&<span>비 {settings.rain}</span>}</div>
     {step===1&&<div className="altitude-guide"><span>높은 하늘 · 차가워</span><span>낮은 하늘 · 따뜻해</span></div>}
 
