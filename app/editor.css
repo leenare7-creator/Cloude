@@ -287,3 +287,11 @@
  .mobile-swipe-guide.horizontal{left:24px;bottom:71px;gap:10px}
  .mobile-swipe-guide.horizontal .swipe-direction-arrow{width:82px;height:38px}
 }
+
+/* Stable gesture frame and explicit cloud height for mobile WebKit. */
+.factory-tab .sky-panel,.factory-tab .sky-stage{overflow-anchor:none}
+.factory-tab .sky-panel:not([data-step="1"])>.lift-source-picker{display:none}
+.stage-cloud-stack{position:relative;inset:auto;width:100%;height:auto;aspect-ratio:5/3}
+.stage-cloud-stack>.cloud-three{visibility:hidden}
+.stage-cloud-stack.is-three-ready>.cloud-three{visibility:visible}
+.factory-tab .step-nav button>span:only-child{font-size:inherit;line-height:1.4}

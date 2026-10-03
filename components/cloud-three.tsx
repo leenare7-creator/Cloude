@@ -80,7 +80,7 @@ export function CloudThree({settings,interactive=false,onReady}:{settings:CloudS
       const animate=()=>{
         if(disposed)return;
         const s=settingsRef.current;
-        const key=[s.humidity,s.height,s.nuclei,s.wind,s.energy,s.angle,s.color,s.shadow,s.depth,s.lightX,s.cloudType,s.growth,interactiveRef.current].join('|');
+        const key=[s.humidity,s.height,s.nuclei,s.wind,s.energy,s.angle,s.color,s.shadow,s.depth,s.lightX,s.cloudType,s.growth,s.liftSource,interactiveRef.current].join('|');
         if(key!==lastKey){lastKey=key;redraw()}
         if(contextOkay){
           try{
@@ -89,7 +89,7 @@ export function CloudThree({settings,interactive=false,onReady}:{settings:CloudS
               needsCheck=false;
               const state=cloudState(s);
               let visible=false;
-              if(state.formed&&state.visibility>.015&&!reportedReady){
+              if(state.formed&&state.visibility>.015){
                 const gl=renderer.getContext(),pixel=new Uint8Array(4);
                 const width=renderer.domElement.width,height=renderer.domElement.height;
                 for(let y=0;y<5&&!visible;y++)for(let x=0;x<7&&!visible;x++){
@@ -97,12 +97,11 @@ export function CloudThree({settings,interactive=false,onReady}:{settings:CloudS
                   visible=pixel[3]>8;
                 }
               }
-              const next=state.formed&&(reportedReady||visible);if(next!==reportedReady){reportedReady=next;onReady?.(next);}
+              const next=state.formed&&visible;if(next!==reportedReady){reportedReady=next;onReady?.(next);}
             }
           }catch(error){
             console.error('Cloud WebGL rendering failed',error);
-            onReady?.(false);
-            return;
+            contextOkay=false;reportedReady=false;onReady?.(false);
           }
         }
         frame=requestAnimationFrame(animate);
