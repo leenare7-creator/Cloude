@@ -73,8 +73,6 @@ function InfluenceCard({settings,compact=false}:{settings:CloudSettings;compact?
 const liftStrengthLabel=(energy:number)=>energy<34?'옆으로 퍼지려 해':energy<68?'조금씩 올라가':'높이 솟으려 해';
 function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSettings;onChange:(patch:Partial<CloudSettings>)=>void;onVisitStep:(step:number)=>void}){
   const stage=useRef<HTMLDivElement>(null),active=useRef(false),last=useRef<{x:number;y:number}>({x:0,y:0}),start=useRef<{x:number;y:number}>({x:0,y:0}),gesture=useRef<'water'|'height'|'seed'|'sun'|'pending'|'orbit'|'flow'|'level'|null>(null),gestureValue=useRef(0),windAtDown=useRef(67),levelAtDown=useRef(0),levelSensitivity=useRef(135),touches=useRef<Map<number,{x:number;y:number}>>(new Map()),pinch=useRef<number|null>(null);
-  const [liftGuideUsed,setLiftGuideUsed]=useState(false);
-  useEffect(()=>setLiftGuideUsed(false),[step]);
   const [drawing,setDrawing]=useState(false),[mode,setMode]=useState<'add'|'remove'>('add');
   const state=cloudState(settings);
   const [colorsOpen,setColorsOpen]=useState(false);
@@ -121,7 +119,6 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     active.current=true;setDrawing(true);last.current=p;start.current=p;
     gestureValue.current=step===0?settings.humidity:settings.nuclei;
     const rail=(e.target as HTMLElement).closest('.sky-height-rail,.mobile-lift-swipe-zone');
-    if(step===1&&rail)setLiftGuideUsed(true);
     levelAtDown.current=step===1?settings.energy:settings.growth??35;
     windAtDown.current=settings.wind;
     levelSensitivity.current=rail?100*stage.current!.getBoundingClientRect().height/rail.getBoundingClientRect().height:135;
@@ -134,15 +131,15 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
   return <>
   <div className={`sky-stage step-${step} ${weatherClass(settings)}`} ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={wheel} aria-label="직접 조작하는 나의 하늘" style={{backgroundImage:skyBackground(settings)}}>
     {step>=1&&<LiftScene source={settings.liftSource??'sun'}/>}
-    <div className="sky-readouts"><span>물 {settings.humidity}%</span><span>높이 {settings.height.toLocaleString()}m</span><span>씨앗 {settings.nuclei}</span>{settings.rain>0&&<span>비 {settings.rain}</span>}</div>
+    <div className="sky-readouts"><span>물 {settings.humidity}%</span><span>높이 {settings.height.toLocaleString()}m</span><span>씨앗 {settings.nuclei}</span>{step===1&&<span aria-label={`솟는 힘 ${settings.energy}, ${liftStrengthLabel(settings.energy)}`}>솟는 힘 {settings.energy}</span>}{settings.rain>0&&<span>비 {settings.rain}</span>}</div>
     {step===1&&<div className="altitude-guide"><span>높이</span><span>0m</span></div>}
 
     <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></div>
     {(step===1||step===2)&&<AirFlow settings={settings}/>}
-    {step===1&&<div className="lift-strength-status" aria-label={`솟는 힘 ${settings.energy}, ${liftStrengthLabel(settings.energy)}`}><span>솟는 힘 <b>{settings.energy}<small> / 100</small></b></span><strong>{liftStrengthLabel(settings.energy)}</strong><small className="lift-strength-hint">위아래로 쓸어 바꾸기</small></div>}
+
     {step===4&&<div className="sun-handle" style={{left:`${settings.lightX}%`,top:`${8+settings.shadow*.52}%`}} aria-label="빛을 끌어 그림자 바꾸기">{settings.liftSource==='night'?<Moon size={22}/>:<Sun size={22}/>}<span>빛</span></div>}
     {(step===1||step===3)&&<div className="sky-height-rail" role="slider" tabIndex={0} aria-label={step===1?'공기를 위로 밀어 올리는 힘':'구름이 자란 시간'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={step===1?settings.energy:settings.growth??35} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const key=step===1?'energy':'growth';onChange({[key]:clamp((step===1?settings.energy:settings.growth??35)+(e.key==='ArrowUp'?2:-2),0,100)})}}}><span>{step===1?'세게 솟아':'오래 자랐어'}</span><i className="rail-line"><b style={{bottom:`${step===1?settings.energy:settings.growth??35}%`}}/></i><span>{step===1?'조금씩 올라':'자라는 중'}</span><span>{step===1?'옆으로 퍼져':'막 생겼어'}</span></div>}
-    {(step===1||step===3)&&<div className={`mobile-swipe-guide vertical${step===1?' mobile-lift-swipe-zone':''}${step===1&&liftGuideUsed?' guide-used':''}`} aria-label={step===1?'오른쪽 하늘을 위아래로 쓸어 솟는 힘 조절':'하늘을 위아래로 쓸어 자라는 시간 조절'}><span>{step===1?'세게 솟아':'오래 자라'}</span><svg className="swipe-direction-arrow" viewBox="0 0 48 104" aria-hidden="true"><path d="M24 2 3 25 Q1 28 5 28 H17 V76 H5 Q1 76 3 79 L24 102 45 79 Q47 76 43 76 H31 V28 H43 Q47 28 45 25 Z"/></svg><span>{step===1?'옆으로 퍼져':'조금 자라'}</span></div>}
+    {(step===1||step===3)&&<div className={`mobile-swipe-guide vertical${step===1?' mobile-lift-swipe-zone':''}`} aria-label={step===1?'오른쪽 하늘을 위아래로 쓸어 솟는 힘 조절':'하늘을 위아래로 쓸어 자라는 시간 조절'}><div className="swipe-guide-visual"><span>{step===1?'세게 솟아':'오래 자라'}</span><svg className="swipe-direction-arrow" viewBox="0 0 48 104" aria-hidden="true"><path d="M24 2 3 25 Q1 28 5 28 H17 V76 H5 Q1 76 3 79 L24 102 45 79 Q47 76 43 76 H31 V28 H43 Q47 28 45 25 Z"/></svg><span>{step===1?'옆으로 퍼져':'조금 자라'}</span></div></div>}
     {step===3&&<div className="mobile-swipe-guide horizontal"><svg className="swipe-direction-arrow" viewBox="0 0 104 48" aria-hidden="true"><path d="M2 24 25 3 Q28 1 28 5 V17 H76 V5 Q76 1 79 3 L102 24 79 45 Q76 47 76 43 V31 H28 V43 Q28 47 25 45 Z"/></svg><span>좌우로 쓸어 바람 바꾸기</span></div>}
     {step===3&&<div className="wind-hint" aria-hidden="true"><span>← 바람 약하게</span><i><b style={{left:`${settings.wind}%`}}/></i><span>세게 →</span></div>}
     {step===4&&<div className={`sky-colors${colorsOpen?' expanded':''}`} onPointerDown={e=>e.stopPropagation()}><button className="color-panel-toggle" aria-expanded={colorsOpen} onClick={()=>setColorsOpen(!colorsOpen)}><i style={{background:settings.color}}/> 구름 색 {colorsOpen?'접기':'바꾸기'}</button>{colorsOpen&&<div className="colors">{colors.map(c=><button key={c.hex} className={settings.color===c.hex?'picked':''} title={c.name} aria-label={c.name} aria-pressed={settings.color===c.hex} style={{background:c.hex}} onClick={()=>onChange({color:c.hex})}/>)}<label className="custom-color" title="직접 색 고르기">+<input type="color" aria-label="직접 색 고르기" value={settings.color} onChange={e=>onChange({color:e.target.value})}/></label></div>}</div>}

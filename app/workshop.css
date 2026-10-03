@@ -132,25 +132,23 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .sky-mode button{border:0!important}
 @media(min-width:360px) and (max-width:790px){.factory-tab .step-nav button{font-size:.7rem}}
 /* Height sets the parcel position; strength changes only the surrounding flow. */
-.lift-strength-status{position:absolute;right:24px;top:58px;z-index:7;width:138px;padding:10px 12px;border:1px solid #ffffff50;border-radius:12px;background:#1747658c;color:#fff;backdrop-filter:blur(8px);pointer-events:none}
-.lift-strength-status>span{display:flex;align-items:baseline;justify-content:space-between;font-size:.67rem;color:#e5f5ff}
-.lift-strength-status b{font-size:1rem;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}.lift-strength-status b small{font-size:.59rem;font-weight:500;opacity:.7}
-.lift-strength-status>strong{display:block;margin-top:4px;font-size:.75rem;font-weight:600;line-height:1.5;white-space:nowrap}
-.lift-strength-hint{display:block;margin-top:5px;font-size:.59rem;opacity:.72;line-height:1.5}
 .factory-tab .altitude-guide{left:22px;top:90px;bottom:66px;border-left:1px solid #ffffff65;padding-left:7px;font-size:.66rem;font-weight:500}
-.factory-tab .step-1 .sky-height-rail{top:176px;bottom:72px;right:24px;height:auto}
 @media(max-width:790px){
- .lift-strength-status{right:12px;top:54px;width:108px;padding:8px;border-radius:10px}
- .lift-strength-status>span{font-size:.58rem}.lift-strength-status b{font-size:.9rem}.lift-strength-status b small{font-size:.5rem}
- .lift-strength-status>strong{font-size:.65rem}.lift-strength-hint{font-size:.52rem;letter-spacing:-.03em}
  .factory-tab .altitude-guide{left:14px;top:88px;bottom:58px;font-size:.58rem;padding-left:6px}
- .mobile-lift-swipe-zone{top:0!important;bottom:0!important;justify-content:flex-end!important;padding-bottom:40px;gap:0!important}
- .mobile-lift-swipe-zone>span{display:none}
- .mobile-lift-swipe-zone .swipe-direction-arrow{width:30px!important;height:68px!important;opacity:.32;transition:opacity .25s}
- .mobile-lift-swipe-zone.guide-used .swipe-direction-arrow{opacity:0}
 }
 
 
 /* The canvas is a non-interactive overlay; existing sky gestures retain ownership. */
 .air-flow-graphic{position:absolute;inset:0;z-index:2;pointer-events:none}
 .air-flow-graphic canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* Match the existing time guide; retain a full-height transparent touch zone. */
+@media(max-width:790px){
+ .mobile-swipe-guide.vertical .swipe-guide-visual{display:contents}
+ .mobile-lift-swipe-zone{top:0!important;bottom:0!important;gap:0}
+ .mobile-lift-swipe-zone .swipe-guide-visual{position:absolute;left:0;right:0;top:64px;bottom:88px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
+}
+
+/* A short direction cue beneath the open current, independent of touch targets. */
+.air-flow-rise-arrow{position:absolute;left:50%;width:22px;height:26px;transform:translateX(-50%);fill:#edf8ff;pointer-events:none}
+@media(max-width:790px){.air-flow-rise-arrow{left:43%}}

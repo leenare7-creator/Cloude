@@ -70,6 +70,7 @@ export function AirFlow({settings}:{settings:CloudSettings}){
  },[]);
  return <div className={`air-flow-graphic${state.visibility>.5?' is-condensing':''}`} aria-label={`공기 흐름: 솟는 힘 ${settings.energy}, ${state.formed?'물방울이 구름으로 모이는 중':state.cooled?'차가워진 공기':'올라가는 공기'}`}>
   <canvas ref={canvas} aria-hidden="true"/>
+  <svg className="air-flow-rise-arrow" viewBox="0 0 24 28" aria-hidden="true" style={{top:`calc(${70-settings.height/2500*16}% - 8px)`,opacity:.58*(1-state.visibility*.8)}}><path d="M12 1 2 12 H8 V27 H16 V12 H22 Z"/></svg>
 
  </div>;
 }
