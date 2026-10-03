@@ -22,3 +22,12 @@ Verification: 320, 390, 430, 1440px; initial, lifted air, formed cloud, result, 
 - Mobile touch: cloud tap placement, corner resize from 240px to 290px, tray scroll to 326px, sky pan from -405px to -639px; no JavaScript errors.
 
 - Follow-up: removed the sky badge; water/height/seeds occupy the upper-left corner on every viewport. Switched the accent family from green to sky blue.
+
+## Air-lift feedback
+
+- Keep water/height/seed readings at the upper left, numeric strength + state at the upper right. Strength remains readable before cloud formation.
+- Height moves the air parcel; strength changes five translucent flow curves continuously, from spreading sideways to rising vertically. Higher strength shortens the animation period.
+- The mobile right third is a full-height strength gesture zone. The swipe arrow disappears after the first strength gesture; the numeric state and motion remain.
+- Simplify the altitude guide to a thin reference line. Keep the air parcel clear of the caption at zero height.
+- Reduced-motion users see static flow curves. Motion is illustrative input feedback, not a simulated physical velocity.
+- Visual revision: the original gesture zone missed swipes near the bottom, changing height unintentionally. Expanded the right zone to full scene height; strength gestures now leave altitude and parcel position unchanged.
