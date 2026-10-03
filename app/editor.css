@@ -240,3 +240,20 @@
  .factory-tab .altitude-guide{top:98px;bottom:65px}
  .factory-tab .sky-height-rail{top:92px;bottom:76px}
 }
+
+/* Use Story 02's natural content height as the shared experiment frame. */
+.factory-tab .studio-grid{position:relative;align-items:start}
+.factory-tab .studio-grid>.control-panel:not(.story-height-reference),
+.factory-tab .studio-grid>.sky-panel{height:var(--story-height,560px);min-height:0;max-height:none;box-sizing:border-box}
+.factory-tab .studio-grid>.sky-panel{display:flex;flex-direction:column}
+.factory-tab .studio-grid .sky-stage{height:auto;min-height:0;flex:1 1 0}
+.factory-tab .studio-grid>.control-panel:not(.story-height-reference){overflow-y:auto}
+.factory-tab .studio-grid>.story-height-reference{position:absolute;top:0;right:0;visibility:hidden;pointer-events:none;height:auto;min-height:0;max-height:none;overflow:visible;margin:0;box-sizing:border-box}
+.factory-tab .story-bottom{margin-top:auto;flex-shrink:0}
+.factory-tab .story-height-reference .story-bottom{margin-top:18px}
+@media(max-width:790px){
+ .factory-tab .studio-grid>.story-height-reference{width:100%}
+ .factory-tab .studio-grid>.control-panel:not(.story-height-reference){overflow-y:auto}
+}
+
+.factory-tab .studio-grid>.control-panel>*{flex-shrink:0}
