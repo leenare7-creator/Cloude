@@ -37,3 +37,6 @@ Reference: Earth Nullschool wind streamlines (https://earth.nullschool.net/ko/) 
 
 - Add one short, translucent upward arrow beneath the airflow source band. It follows the altitude anchor, remains non-interactive and dims as the cloud forms.
 - Readability revision: preserve the original white text, translucent filled arrows, sizes and spacing. Add a layered dark text shadow only; no label capsule, navy text or arrow outline. Verify over the sun at mobile widths.
+
+- Light dragging includes the 14px halo around its visible handle; child artwork does not intercept pointer targeting. Use displacement from the initial light position so an off-center grab does not snap. Verify halo, icon, label and mouse drags; dragging elsewhere still orbits the cloud.
+- Repeated drag regression: ignore pointer moves from IDs without a preceding pointerdown. Hover/compatibility mouse events must not create phantom pinch contacts or block the next light drag.

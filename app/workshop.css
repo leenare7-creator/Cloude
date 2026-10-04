@@ -157,3 +157,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 @media(max-width:790px){
  .mobile-swipe-guide span{text-shadow:0 1px 2px rgba(8,34,55,.95),0 2px 6px rgba(8,34,55,.8),0 0 12px rgba(8,34,55,.45)}
 }
+
+/* Include the light halo in its drag target without changing the artwork. */
+.sun-handle::before{content:"";position:absolute;inset:-14px;border-radius:50%;pointer-events:auto}
+.sun-handle>svg,.sun-handle>span{pointer-events:none}

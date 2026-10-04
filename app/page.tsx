@@ -73,6 +73,7 @@ function InfluenceCard({settings,compact=false}:{settings:CloudSettings;compact?
 const liftStrengthLabel=(energy:number)=>energy<34?'옆으로 퍼지려 해':energy<68?'조금씩 올라가':'높이 솟으려 해';
 function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSettings;onChange:(patch:Partial<CloudSettings>)=>void;onVisitStep:(step:number)=>void}){
   const stage=useRef<HTMLDivElement>(null),active=useRef(false),last=useRef<{x:number;y:number}>({x:0,y:0}),start=useRef<{x:number;y:number}>({x:0,y:0}),gesture=useRef<'water'|'height'|'seed'|'sun'|'pending'|'orbit'|'flow'|'level'|null>(null),gestureValue=useRef(0),windAtDown=useRef(67),levelAtDown=useRef(0),levelSensitivity=useRef(135),touches=useRef<Map<number,{x:number;y:number}>>(new Map()),pinch=useRef<number|null>(null);
+  const lightAtDown=useRef({x:25,shadow:35});
   const [drawing,setDrawing]=useState(false),[mode,setMode]=useState<'add'|'remove'>('add');
   const state=cloudState(settings);
   const [colorsOpen,setColorsOpen]=useState(false);
@@ -105,7 +106,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
         gesture.current='flow';onChange({wind:Math.round(clamp(windAtDown.current+totalX*125,0,100))});
       }
     }else if(step===4&&gesture.current==='sun'){
-      onChange({lightX:Math.round(p.x*100),shadow:Math.round(clamp((p.y-.08)/.52,0,1)*100)});
+      if(!first)onChange({lightX:Math.round(clamp(lightAtDown.current.x+(p.x-start.current.x)*100,0,100)),shadow:Math.round(clamp(lightAtDown.current.shadow+(p.y-start.current.y)*100/.52,0,100))});
     }else if(step===4){
       if(gesture.current==='pending'&&Math.hypot(p.x-start.current.x,p.y-start.current.y)>.015)gesture.current='orbit';
       if(gesture.current==='orbit')onChange({angle:((Math.round(settings.angle+(p.x-last.current.x)*360)%360)+360)%360});
@@ -122,10 +123,14 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     levelAtDown.current=step===1?settings.energy:settings.growth??35;
     windAtDown.current=settings.wind;
     levelSensitivity.current=rail?100*stage.current!.getBoundingClientRect().height/rail.getBoundingClientRect().height:135;
-    gesture.current=step===0?'water':step===1?(rail?'level':'height'):step===2?'seed':step===3?(rail?'level':'pending'):(e.target as HTMLElement).closest('.sun-handle')?'sun':'pending';
+    const light=stage.current?.querySelector('.sun-handle')?.getBoundingClientRect();
+    const target=e.target instanceof Element?e.target:null;
+    const grabsLight=step===4&&(!!target?.closest('.sun-handle')||!!light&&e.clientX>=light.left-14&&e.clientX<=light.right+14&&e.clientY>=light.top-14&&e.clientY<=light.bottom+14);
+    lightAtDown.current={x:settings.lightX,shadow:settings.shadow};
+    gesture.current=step===0?'water':step===1?(rail?'level':'height'):step===2?'seed':step===3?(rail?'level':'pending'):grabsLight?'sun':'pending';
     if(gesture.current!=='level')interact(e,true);
   };
-  const move=(e:React.PointerEvent)=>{const p=norm(e);touches.current.set(e.pointerId,p);if(touches.current.size===2&&step===4){const a=[...touches.current.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(pinch.current!==null){onChange({depth:Math.round(clamp(settings.depth+(d-pinch.current)*130,0,100))})}pinch.current=d;return}if(active.current)interact(e)};
+  const move=(e:React.PointerEvent)=>{if(!touches.current.has(e.pointerId))return;const p=norm(e);touches.current.set(e.pointerId,p);if(touches.current.size===2&&step===4){const a=[...touches.current.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(pinch.current!==null){onChange({depth:Math.round(clamp(settings.depth+(d-pinch.current)*130,0,100))})}pinch.current=d;return}if(active.current)interact(e)};
   const up=(e:React.PointerEvent)=>{touches.current.delete(e.pointerId);pinch.current=null;active.current=false;setDrawing(false);gesture.current=null;if(stage.current?.hasPointerCapture(e.pointerId))stage.current.releasePointerCapture(e.pointerId)};
   const wheel=(e:React.WheelEvent)=>{if(step!==4)return;e.preventDefault();onChange({depth:Math.round(clamp(settings.depth-e.deltaY*.08,0,100))})};
   return <>
