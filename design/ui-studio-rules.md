@@ -40,3 +40,5 @@ Reference: Earth Nullschool wind streamlines (https://earth.nullschool.net/ko/) 
 
 - Light dragging includes the 14px halo around its visible handle; child artwork does not intercept pointer targeting. Use displacement from the initial light position so an off-center grab does not snap. Verify halo, icon, label and mouse drags; dragging elsewhere still orbits the cloud.
 - Repeated drag regression: ignore pointer moves from IDs without a preceding pointerdown. Hover/compatibility mouse events must not create phantom pinch contacts or block the next light drag.
+
+- Living clouds: continuously drift and bob on a smooth closed loop, with modest wind-dependent amplitude and speed. Move Three.js and the fallback together; never re-rasterize clouds on each animation frame. Pause while the workshop is being manipulated or a placed cloud is selected. In the sky builder, move the visual and its edit hit targets together, keep stored coordinates unchanged, and offset each instance's phase. Reduced motion disables the animation.

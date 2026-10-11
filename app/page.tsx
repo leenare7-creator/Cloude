@@ -7,6 +7,7 @@ import {Dialog,DialogContent,DialogDescription,DialogTitle} from '@/components/u
 import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
 import {SkyBuilder} from '@/components/sky-builder';
 import {CloudThree} from '@/components/cloud-three';
+import {CloudFloat} from '@/components/cloud-float';
 import {AirFlow} from '@/components/air-flow';
 import {CloudSettings,DEFAULT_CLOUD,CLOUD_TYPES,cloudState,cloudStory,cloudInfluences,deriveCloud,liftName,stabilityName,growthName,type LiftSource} from '@/lib/cloud-model';
 import {drawCloud,subscribeCloudTexture} from '@/lib/cloud-render';
@@ -139,7 +140,7 @@ function Sky({step,settings,onChange,onVisitStep}:{step:number;settings:CloudSet
     <div className="sky-readouts"><span>물 {settings.humidity}%</span><span>높이 {settings.height.toLocaleString()}m</span><span>씨앗 {settings.nuclei}</span>{step===1&&<span aria-label={`솟는 힘 ${settings.energy}, ${liftStrengthLabel(settings.energy)}`}>솟는 힘 {settings.energy}</span>}{settings.rain>0&&<span>비 {settings.rain}</span>}</div>
     {step===1&&<div className="altitude-guide"><span>높이</span><span>0m</span></div>}
 
-    <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></div>
+    <div className="cloud-position" style={{top:`${53-settings.height/2500*16}%`}}><CloudFloat wind={settings.wind} paused={drawing}><StageCloud settings={settings} interactive={drawing}/><RainLayer settings={settings}/></CloudFloat></div>
     {(step===1||step===2)&&<AirFlow settings={settings}/>}
 
     {step===4&&<div className="sun-handle" style={{left:`${settings.lightX}%`,top:`${8+settings.shadow*.52}%`}} aria-label="빛을 끌어 그림자 바꾸기">{settings.liftSource==='night'?<Moon size={22}/>:<Sun size={22}/>}<span>빛</span></div>}

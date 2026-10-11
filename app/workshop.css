@@ -161,3 +161,13 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 /* Include the light halo in its drag target without changing the artwork. */
 .sun-handle::before{content:"";position:absolute;inset:-14px;border-radius:50%;pointer-events:auto}
 .sun-handle>svg,.sun-handle>span{pointer-events:none}
+
+/* Gentle continuous motion, independent of canvas resolution and saved placement. */
+.cloud-float{position:relative;width:100%;height:100%;animation:cloud-float var(--cloud-duration,18s) ease-in-out var(--cloud-delay,0s) infinite;transform-origin:center}
+@keyframes cloud-float{
+ 0%,100%{transform:translate3d(calc(var(--cloud-drift,5px) * -.6),0,0)}
+ 25%{transform:translate3d(0,calc(var(--cloud-bob,4px) * -1),0)}
+ 50%{transform:translate3d(var(--cloud-drift,5px),0,0)}
+ 75%{transform:translate3d(0,var(--cloud-bob,4px),0)}
+}
+@media(prefers-reduced-motion:reduce){.cloud-float{animation:none;transform:none}}

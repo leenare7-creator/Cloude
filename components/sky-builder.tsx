@@ -11,6 +11,7 @@ import {latestSavedSkies,saveSharedSky,type SavedSkyRecord} from "@/lib/skies";
 import {cloudInSky,skyExposure} from '@/lib/sky-lighting';
 import {drawSkySun} from '@/lib/sky-sun';
 import {cloudsByIds} from "@/lib/clouds";
+import {CloudFloat} from '@/components/cloud-float';
 
 type RecordCloud=CloudSettings&{id:number;maker:string;decoration:string;createdAt:string};
 type Weather="clear"|"cloudy"|"rain"|"storm";
@@ -54,6 +55,7 @@ function PlacedCloudView({item,cloud,settings,exposure,selected,onDrag,onResize,
  const moveResize=(event:ReactPointerEvent<HTMLButtonElement>)=>{const r=resize.current;if(!r||r.pointerId!==event.pointerId)return;event.stopPropagation();const ratio=((event.clientX-r.x)*r.vx+(event.clientY-r.y)*r.vy)/(r.vx*r.vx+r.vy*r.vy);onResize(item.instanceId,clamp(r.scale*ratio,.5,1.8))};
  const endResize=(event:ReactPointerEvent<HTMLButtonElement>)=>{resize.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId)};
  return <div ref={root} className={`placed-cloud${selected?' selected':''}`} style={{left:`${item.x}%`,top:`${item.y}%`,width:`${240*item.scale}px`,zIndex:Math.round(item.scale*10)+3}}>
+  <CloudFloat wind={settings.wind} phase={item.instanceId} paused={selected}>
   <CloudPicture settings={settings} exposure={exposure} onBounds={setBounds}/>
   <div className="cloud-edit-bounds" style={{left:`${bounds.left}%`,top:`${bounds.top}%`,width:`${bounds.width}%`,height:`${bounds.height}%`}}>
    <button className="cloud-move-target" onPointerDown={e=>{
@@ -64,6 +66,7 @@ function PlacedCloudView({item,cloud,settings,exposure,selected,onDrag,onResize,
    }} onKeyDown={e=>{if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();onRemove(item.instanceId)}}} aria-label={`${cloud.maker}의 ${typeName(cloud.cloudType)}. 끌어서 옮기기`}/>
    {selected&&(['nw','ne','sw','se'] as const).map(corner=><button key={corner} className={`cloud-resize-handle corner-${corner}`} aria-label={`${cloud.maker} 구름 ${corner} 모서리 크기 조절`} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={endResize} onPointerCancel={endResize} onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();onResize(item.instanceId,clamp(item.scale+(['ArrowUp','ArrowRight'].includes(e.key)?.08:-.08),.5,1.8))}}}/>)}
   </div>
+  </CloudFloat>
  </div>;
 }
 
